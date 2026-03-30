@@ -265,7 +265,7 @@ body { overflow:hidden; background:#87CEEB; font-family:'Helvetica Neue',Helveti
 </div>
 <div id="hotbar"></div>
 <div id="controls-hint">
-  WASD — Move<br>Mouse — Look<br>Space — Jump<br>Shift — Sprint<br>LClick — Place block<br>RClick — Delete block<br>Avatar — Customize
+  WASD — Move<br>Hold+Drag — Orbit camera<br>Click — Place block<br>RClick — Delete block<br>Space — Jump<br>Shift — Sprint<br>Avatar — Customize
 </div>
 <div id="chat"></div>
 <div id="leaderboard">
@@ -305,7 +305,8 @@ let scene, camera, renderer;
 let player, charParts = {};
 let vel=new THREE.Vector3(), onGround=false;
 let cYaw=0, cPitch=0.18;
-let keys={}, isLocked=false, isActive=false;
+let keys={}, isActive=false;
+let mouseDown=false, mouseDragX=0, mouseDragY=0, mouseDragged=false;
 let walkTimer=0;
 
 let solidParts=[], killParts=[], cpParts=[];
@@ -605,7 +606,6 @@ let charPanelOpen=false;
 function toggleCharPanel() {
   charPanelOpen=!charPanelOpen;
   document.getElementById('char-panel').classList.toggle('open',charPanelOpen);
-  if (charPanelOpen && isLocked) document.exitPointerLock();
 }
 
 function showCharTab(id, btn) {
@@ -923,14 +923,29 @@ function updateLeaderboard(){
 document.addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(e.code.startsWith('Digit')){const n=parseInt(e.code.slice(5),10)-1;if(n>=0&&n<BLOCK_COLORS.length)selectSlot(n);}
-  if(e.code==='Escape'){if(isLocked)document.exitPointerLock();if(charPanelOpen)toggleCharPanel();}
+  if(e.code==='Escape'){if(charPanelOpen)toggleCharPanel();}
 });
 document.addEventListener('keyup',e=>{keys[e.code]=false;});
-document.addEventListener('mousemove',e=>{if(!isLocked)return;cYaw-=e.movementX*0.0024;cPitch-=e.movementY*0.0024;cPitch=Math.max(-0.38,Math.min(0.80,cPitch));});
-document.addEventListener('mousedown',e=>{if(!isLocked)return;if(e.button===0)doPlace();if(e.button===2)doRemove();});
+document.addEventListener('mousemove',e=>{
+  if(!isActive||!mouseDown)return;
+  const dx=e.movementX||e.clientX-mouseDragX, dy=e.movementY||e.clientY-mouseDragY;
+  if(Math.abs(dx)>1||Math.abs(dy)>1)mouseDragged=true;
+  cYaw-=dx*0.0028; cPitch-=dy*0.0028;
+  cPitch=Math.max(-0.38,Math.min(0.80,cPitch));
+  mouseDragX=e.clientX; mouseDragY=e.clientY;
+});
+document.addEventListener('mousedown',e=>{
+  if(!isActive)return;
+  if(e.button===0){mouseDown=true;mouseDragged=false;mouseDragX=e.clientX;mouseDragY=e.clientY;}
+  if(e.button===2&&!mouseDragged)doRemove();
+});
+document.addEventListener('mouseup',e=>{
+  if(e.button===0){
+    if(!mouseDragged&&isActive&&e.target===document.getElementById('game-canvas'))doPlace();
+    mouseDown=false; mouseDragged=false;
+  }
+});
 document.addEventListener('contextmenu',e=>e.preventDefault());
-document.getElementById('game-canvas').addEventListener('click',()=>{if(!isMobile&&!isLocked&&!charPanelOpen)document.getElementById('game-canvas').requestPointerLock();});
-document.addEventListener('pointerlockchange',()=>{isLocked=document.pointerLockElement===document.getElementById('game-canvas');if(!isMobile){isActive=isLocked;document.getElementById('crosshair').style.display=isLocked?'block':'none';}});
 window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
 
 // ─── TOUCH ───────────────────────────────────────────────────
@@ -959,8 +974,9 @@ function gameLoop(ts){
 // ─── START ────────────────────────────────────────────────────
 function startGame(){
   document.getElementById('overlay').style.display='none';
-  if(isMobile){isActive=true;document.getElementById('joystick-zone').style.display='block';document.getElementById('touch-buttons').style.display='flex';document.getElementById('crosshair').style.display='block';document.getElementById('controls-hint').style.display='none';}
-  else{document.getElementById('game-canvas').requestPointerLock();}
+  isActive=true;
+  document.getElementById('crosshair').style.display='block';
+  if(isMobile){document.getElementById('joystick-zone').style.display='block';document.getElementById('touch-buttons').style.display='flex';document.getElementById('controls-hint').style.display='none';}
   requestAnimationFrame(ts=>{prevTs=ts;gameLoop(ts);});
 }
 
