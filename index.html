@@ -153,6 +153,9 @@ body { overflow:hidden; background:#87CEEB; font-family:'Helvetica Neue',Helveti
 #btn-jump   { background:rgba(0,166,80,0.45); border-color:#00a650; font-size:14px; width:76px; height:76px; }
 #btn-sprint { background:rgba(241,196,15,0.38); border-color:#f1c40f; }
 #btn-sprint.sprinting { background:rgba(241,196,15,0.72); }
+#btn-place  { background:rgba(0,120,230,0.45); border-color:#0078e6; }
+#btn-delete { background:rgba(220,50,50,0.45); border-color:#e33; }
+#btn-delete.delete-mode { background:rgba(220,50,50,0.85); border-color:#ff6060; }
 
 @media (max-width:900px) { .hotbar-slot{width:46px;height:46px} .slot-color{width:24px;height:24px} .slot-label{display:none} #controls-hint{display:none} #chat{bottom:100px} #health-hud{bottom:80px} }
 @media (max-width:600px) { .hotbar-slot{width:38px;height:38px} .slot-color{width:20px;height:20px} .slot-num{display:none} #stats{display:none} }
@@ -174,6 +177,8 @@ body { overflow:hidden; background:#87CEEB; font-family:'Helvetica Neue',Helveti
 <div id="touch-buttons">
   <div class="touch-btn" id="btn-jump">&#8679;<br>JUMP</div>
   <div class="touch-btn" id="btn-sprint">&#9193;<br>SPRINT</div>
+  <div class="touch-btn" id="btn-place">&#9632;<br>PLACE</div>
+  <div class="touch-btn" id="btn-delete">&#128465;<br>DELETE</div>
 </div>
 
 <!-- CHARACTER CUSTOMIZATION PANEL -->
@@ -234,7 +239,7 @@ body { overflow:hidden; background:#87CEEB; font-family:'Helvetica Neue',Helveti
       Click <strong style="color:#aaa">Avatar</strong> in the top bar to customize your character
     </span>
     <span id="mobile-controls" style="display:none">
-      Left thumb — Move &nbsp;|&nbsp; Right drag — Look &nbsp;|&nbsp; Tap Avatar to customize
+      Left thumb — Move &nbsp;|&nbsp; Right drag — Look &nbsp;|&nbsp; PLACE/DELETE buttons — Build &nbsp;|&nbsp; Avatar to customize
     </span>
   </div>
 </div>
@@ -260,7 +265,7 @@ body { overflow:hidden; background:#87CEEB; font-family:'Helvetica Neue',Helveti
 </div>
 <div id="hotbar"></div>
 <div id="controls-hint">
-  WASD — Move<br>Mouse — Look<br>Space — Jump<br>Shift — Sprint<br>Avatar — Customize
+  WASD — Move<br>Mouse — Look<br>Space — Jump<br>Shift — Sprint<br>LClick — Place block<br>RClick — Delete block<br>Avatar — Customize
 </div>
 <div id="chat"></div>
 <div id="leaderboard">
@@ -938,6 +943,8 @@ function updateJoyUI(){const h=document.getElementById('joystick-handle');if(h)h
 function bindBtn(id,down,up){const el=document.getElementById(id);if(!el)return;el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();down&&down();},{passive:false});el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();up&&up();},{passive:false});}
 bindBtn('btn-jump',()=>{keys['Space']=true;},()=>{keys['Space']=false;});
 bindBtn('btn-sprint',()=>{touchSprint=!touchSprint;document.getElementById('btn-sprint').classList.toggle('sprinting',touchSprint);},null);
+bindBtn('btn-place',()=>{doPlace();},null);
+bindBtn('btn-delete',()=>{doRemove();},null);
 
 // ─── GAME LOOP ────────────────────────────────────────────────
 let killAnimT=0,prevTs=0;
