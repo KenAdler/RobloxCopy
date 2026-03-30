@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>RobloxCopy</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -120,20 +123,127 @@ body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Arial, sa
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
+
+/* ---- TOUCH / MOBILE ---- */
+#game-canvas { touch-action: none; }
+
+/* Virtual joystick */
+#joystick-zone {
+  position: fixed; bottom: 100px; left: 24px;
+  width: 140px; height: 140px;
+  z-index: 150; display: none; touch-action: none;
+}
+#joystick-base {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(255,255,255,0.10);
+  border: 2px solid rgba(255,255,255,0.28);
+}
+#joystick-handle {
+  position: absolute;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(255,255,255,0.45);
+  border: 2px solid rgba(255,255,255,0.75);
+  top: 44px; left: 44px;
+  pointer-events: none;
+}
+
+/* Touch action buttons (right side) */
+#touch-buttons {
+  position: fixed; bottom: 100px; right: 20px;
+  display: none; flex-direction: column;
+  align-items: center; gap: 10px; z-index: 150;
+}
+.touch-btn {
+  width: 68px; height: 68px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.35);
+  color: white; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none; user-select: none;
+  text-align: center; line-height: 1.2;
+  -webkit-tap-highlight-color: transparent;
+}
+#btn-jump  { background: rgba(46,204,113,0.38); border-color: #2ecc71; font-size: 15px; width: 78px; height: 78px; }
+#btn-place { background: rgba(80,140,255,0.38); border-color: #6699ff; }
+#btn-remove{ background: rgba(220,50,50,0.38);  border-color: #e3393e; }
+#btn-sprint{ background: rgba(241,196,15,0.38); border-color: #f1c40f; }
+
+/* Sprint active state */
+#btn-sprint.sprinting { background: rgba(241,196,15,0.70); }
+
+/* Responsive hotbar — scale down on smaller screens */
+@media (max-width: 900px) {
+  .hotbar-slot { width: 46px; height: 46px; }
+  .slot-color  { width: 26px; height: 26px; }
+  .slot-label  { display: none; }
+  #hotbar { gap: 3px; padding: 5px; }
+  #controls-hint { display: none; }
+  #chat { bottom: 100px; }
+  #health-container { bottom: 88px; }
+}
+@media (max-width: 600px) {
+  .hotbar-slot { width: 38px; height: 38px; }
+  .slot-color  { width: 22px; height: 22px; }
+  .slot-num    { display: none; }
+  #topbar-center { display: none; }
+  #stats { font-size: 10px; }
+}
+
+/* Landscape-only warning for portrait mode */
+#portrait-warn {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: #1a1a2e; color: white;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 14px; font-size: 18px; text-align: center;
+  padding: 24px;
+}
+@media (orientation: portrait) and (max-width: 1024px) {
+  #portrait-warn { display: flex; }
+}
 </style>
 </head>
 <body>
 
 <canvas id="game-canvas"></canvas>
 
+<!-- Portrait orientation warning -->
+<div id="portrait-warn">
+  <div style="font-size:48px;">&#8635;</div>
+  <strong>Rotate your device</strong>
+  <p style="font-size:14px; color:#aaa;">RobloxCopy is best played in landscape mode</p>
+</div>
+
+<!-- Virtual joystick (mobile left thumb) -->
+<div id="joystick-zone">
+  <div id="joystick-base"></div>
+  <div id="joystick-handle"></div>
+</div>
+
+<!-- Touch action buttons (mobile right thumb) -->
+<div id="touch-buttons">
+  <div class="touch-btn" id="btn-jump">&#8679;<br>JUMP</div>
+  <div style="display:flex;gap:10px;">
+    <div class="touch-btn" id="btn-place">&#9632;<br>PLACE</div>
+    <div class="touch-btn" id="btn-remove">&#10005;<br>REMOVE</div>
+  </div>
+  <div class="touch-btn" id="btn-sprint">&#9193;<br>SPRINT</div>
+</div>
+
 <div id="overlay">
   <h1>Roblox<span>Copy</span></h1>
   <p>A Roblox-inspired 3D world builder</p>
   <button id="play-btn" onclick="startGame()">Play</button>
   <div id="controls-summary">
-    WASD — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Space — Jump &nbsp;|&nbsp; Shift — Sprint<br>
-    Left Click — Place block &nbsp;|&nbsp; Right Click — Remove block<br>
-    1-9 — Select block type &nbsp;|&nbsp; Esc — Unlock mouse
+    <span id="desktop-controls">
+      WASD — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Space — Jump &nbsp;|&nbsp; Shift — Sprint<br>
+      Left Click — Place block &nbsp;|&nbsp; Right Click — Remove<br>
+      1-9 — Select block type &nbsp;|&nbsp; Esc — Unlock mouse
+    </span>
+    <span id="mobile-controls" style="display:none;">
+      Left thumb — Move &nbsp;|&nbsp; Right drag — Look<br>
+      JUMP button — Jump &nbsp;|&nbsp; SPRINT — toggle sprint<br>
+      PLACE / REMOVE buttons — build &amp; destroy<br>
+      Tap hotbar to change block type
+    </span>
   </div>
 </div>
 
@@ -239,6 +349,24 @@ const screenCenter = new THREE.Vector2(0, 0);
 
 // Baseplate reference mesh (for raycasting)
 let baseMesh;
+
+// ---- Mobile detection ----
+const isMobile = navigator.maxTouchPoints > 1 ||
+  /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+
+// isActive: game is running (replaces isLocked check for mobile)
+let isActive = false;
+
+// ---- Touch / joystick state ----
+let joyTouchId = null;        // touch id controlling joystick
+let joyBaseX = 0, joyBaseY = 0;
+let joyDX = 0, joyDY = 0;    // normalized -1..1
+const JOY_RADIUS = 70;        // px
+
+let lookTouchId = null;       // touch id controlling camera
+let lookLastX = 0, lookLastY = 0;
+
+let touchSprinting = false;
 
 // ============================================================
 // UI
@@ -656,17 +784,23 @@ function nearbyBlocks(pos) {
 // PHYSICS UPDATE
 // ============================================================
 function updatePlayer(dt) {
-  const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'];
+  const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'] || touchSprinting;
   const speed = isSprinting ? SPRINT : WALK;
 
   // Movement direction relative to camera yaw
   const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
   const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
   const dir = new THREE.Vector3();
+  // Keyboard
   if (keys['KeyW'] || keys['ArrowUp'])    dir.add(fwd);
   if (keys['KeyS'] || keys['ArrowDown'])  dir.sub(fwd);
   if (keys['KeyA'] || keys['ArrowLeft'])  dir.sub(right);
   if (keys['KeyD'] || keys['ArrowRight']) dir.add(right);
+  // Joystick (mobile)
+  if (joyTouchId !== null && (Math.abs(joyDX) > 0.1 || Math.abs(joyDY) > 0.1)) {
+    dir.add(fwd.clone().multiplyScalar(-joyDY));
+    dir.add(right.clone().multiplyScalar(joyDX));
+  }
   const isMoving = dir.lengthSq() > 0;
   if (isMoving) dir.normalize();
 
@@ -851,7 +985,7 @@ function doRemoveBlock(mesh) {
 }
 
 // ============================================================
-// INPUT
+// INPUT — KEYBOARD + MOUSE (desktop)
 // ============================================================
 document.addEventListener('keydown', e => {
   keys[e.code] = true;
@@ -859,9 +993,7 @@ document.addEventListener('keydown', e => {
     const n = parseInt(e.code.slice(5), 10) - 1;
     if (n >= 0 && n < BLOCK_TYPES.length) selectSlot(n);
   }
-  if (e.code === 'Escape' && isLocked) {
-    document.exitPointerLock();
-  }
+  if (e.code === 'Escape' && isLocked) document.exitPointerLock();
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
 
@@ -879,21 +1011,22 @@ document.addEventListener('mousedown', e => {
   } else if (e.button === 2) {
     raycaster.setFromCamera(screenCenter, camera);
     const hits = raycaster.intersectObjects(blockMeshes);
-    if (hits.length > 0 && hits[0].distance < 20) {
-      doRemoveBlock(hits[0].object);
-    }
+    if (hits.length > 0 && hits[0].distance < 20) doRemoveBlock(hits[0].object);
   }
 });
 
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 document.getElementById('game-canvas').addEventListener('click', () => {
-  if (!isLocked) document.getElementById('game-canvas').requestPointerLock();
+  if (!isMobile && !isLocked) document.getElementById('game-canvas').requestPointerLock();
 });
 
 document.addEventListener('pointerlockchange', () => {
   isLocked = document.pointerLockElement === document.getElementById('game-canvas');
-  document.getElementById('crosshair').style.display = isLocked ? 'block' : 'none';
+  if (!isMobile) {
+    isActive = isLocked;
+    document.getElementById('crosshair').style.display = isLocked ? 'block' : 'none';
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -901,6 +1034,99 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// ============================================================
+// INPUT — TOUCH (mobile / iPad)
+// ============================================================
+function clampPitch(p) { return Math.max(-Math.PI * 0.45, Math.min(Math.PI * 0.45, p)); }
+
+function updateJoystickUI() {
+  const handle = document.getElementById('joystick-handle');
+  if (!handle) return;
+  const ox = joyDX * JOY_RADIUS * 0.6;
+  const oy = joyDY * JOY_RADIUS * 0.6;
+  handle.style.transform = `translate(${ox}px, ${oy}px)`;
+}
+
+const canvas = document.getElementById('game-canvas');
+
+canvas.addEventListener('touchstart', e => {
+  if (!isActive) return;
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    const x = t.clientX, y = t.clientY;
+    const leftZone = x < window.innerWidth * 0.42;
+    if (leftZone && joyTouchId === null) {
+      // Start joystick
+      joyTouchId = t.identifier;
+      joyBaseX = x; joyBaseY = y;
+      joyDX = 0; joyDY = 0;
+      const zone = document.getElementById('joystick-zone');
+      if (zone) { zone.style.left = (x - 70) + 'px'; zone.style.bottom = (window.innerHeight - y - 70) + 'px'; }
+      updateJoystickUI();
+    } else if (!leftZone && lookTouchId === null) {
+      // Start camera look
+      lookTouchId = t.identifier;
+      lookLastX = x; lookLastY = y;
+    }
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  if (!isActive) return;
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === joyTouchId) {
+      const dx = t.clientX - joyBaseX;
+      const dy = t.clientY - joyBaseY;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      const clamped = Math.min(len, JOY_RADIUS);
+      joyDX = (dx / len) * (clamped / JOY_RADIUS) || 0;
+      joyDY = (dy / len) * (clamped / JOY_RADIUS) || 0;
+      updateJoystickUI();
+    } else if (t.identifier === lookTouchId) {
+      const sens = 0.005;
+      yaw   -= (t.clientX - lookLastX) * sens;
+      pitch -= (t.clientY - lookLastY) * sens;
+      pitch  = clampPitch(pitch);
+      lookLastX = t.clientX; lookLastY = t.clientY;
+    }
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  for (const t of e.changedTouches) {
+    if (t.identifier === joyTouchId) { joyTouchId = null; joyDX = 0; joyDY = 0; updateJoystickUI(); }
+    if (t.identifier === lookTouchId) { lookTouchId = null; }
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchcancel', e => {
+  for (const t of e.changedTouches) {
+    if (t.identifier === joyTouchId) { joyTouchId = null; joyDX = 0; joyDY = 0; updateJoystickUI(); }
+    if (t.identifier === lookTouchId) { lookTouchId = null; }
+  }
+}, { passive: false });
+
+// Touch action buttons
+function bindTouchBtn(id, onDown, onUp) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); onDown && onDown(); }, { passive: false });
+  el.addEventListener('touchend',   e => { e.preventDefault(); e.stopPropagation(); onUp   && onUp();   }, { passive: false });
+}
+
+bindTouchBtn('btn-jump', () => { keys['Space'] = true; }, () => { keys['Space'] = false; });
+bindTouchBtn('btn-place', () => { doPlaceBlock(); }, null);
+bindTouchBtn('btn-remove', () => {
+  raycaster.setFromCamera(screenCenter, camera);
+  const hits = raycaster.intersectObjects(blockMeshes);
+  if (hits.length > 0 && hits[0].distance < 20) doRemoveBlock(hits[0].object);
+}, null);
+bindTouchBtn('btn-sprint', () => {
+  touchSprinting = !touchSprinting;
+  document.getElementById('btn-sprint').classList.toggle('sprinting', touchSprinting);
+}, null);
 
 // ============================================================
 // GAME LOOP
@@ -921,7 +1147,7 @@ function gameLoop(timestamp) {
     document.getElementById('stat-fps').textContent = `FPS: ${fpsVal}`;
   }
 
-  if (isLocked) {
+  if (isActive) {
     updatePlayer(dt);
     updateCamera();
     updateGhostBlock();
@@ -935,12 +1161,30 @@ function gameLoop(timestamp) {
 // ============================================================
 function startGame() {
   document.getElementById('overlay').style.display = 'none';
-  document.getElementById('game-canvas').requestPointerLock();
+
+  if (isMobile) {
+    // Mobile: no pointer lock needed, activate immediately
+    isActive = true;
+    document.getElementById('joystick-zone').style.display = 'block';
+    document.getElementById('touch-buttons').style.display = 'flex';
+    document.getElementById('crosshair').style.display = 'block';
+    document.getElementById('controls-hint').style.display = 'none';
+  } else {
+    // Desktop: use pointer lock
+    document.getElementById('game-canvas').requestPointerLock();
+  }
+
   requestAnimationFrame(ts => { prevTime = ts; gameLoop(ts); });
 }
 
 buildHotbar();
 initScene();
+
+// Show correct instructions in overlay
+if (isMobile) {
+  document.getElementById('desktop-controls').style.display = 'none';
+  document.getElementById('mobile-controls').style.display  = 'inline';
+}
 </script>
 </body>
 </html>
