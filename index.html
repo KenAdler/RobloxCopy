@@ -59,79 +59,144 @@ body { overflow:hidden; background:#87CEEB; font-family:'Helvetica Neue',Helveti
 #death-flash { position:fixed; inset:0; background:#cc1100; opacity:0; pointer-events:none; z-index:300; transition:opacity 0.35s; }
 
 /* ═══════════════════════════════════════════════════════
-   CHARACTER CUSTOMIZATION PANEL
+   AVATAR EDITOR
 ═══════════════════════════════════════════════════════ */
-#char-panel {
-  position:fixed; top:0; right:-310px; width:300px; height:100vh;
-  background:rgba(18,18,24,0.97); border-left:1px solid rgba(255,255,255,0.08);
-  z-index:400; display:flex; flex-direction:column;
-  transition:right 0.28s cubic-bezier(0.4,0,0.2,1);
-  overflow:hidden;
+#avatar-editor {
+  position:fixed; inset:36px 0 0 0; background:#0d0d18;
+  z-index:400; display:none; flex-direction:column;
 }
-#char-panel.open { right:0; }
-#char-panel-header {
+#avatar-editor.open { display:flex; }
+#ae-header {
   display:flex; align-items:center; justify-content:space-between;
-  padding:10px 14px; background:rgba(255,255,255,0.04);
-  border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0;
-  margin-top:36px;
+  padding:10px 18px; background:rgba(255,255,255,0.04);
+  border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0;
 }
-#char-panel-header h2 { color:white; font-size:14px; font-weight:700; letter-spacing:0.3px; }
-#char-close { background:none; border:none; color:rgba(255,255,255,0.5); font-size:18px; cursor:pointer; padding:2px 6px; border-radius:3px; transition:color 0.1s; }
-#char-close:hover { color:white; }
-.char-tabs { display:flex; border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0; }
-.char-tab {
-  flex:1; padding:8px 4px; background:none; border:none; color:rgba(255,255,255,0.45);
-  font-size:11px; font-weight:700; cursor:pointer; border-bottom:2px solid transparent;
-  transition:color 0.15s,border-color 0.15s; text-transform:uppercase; letter-spacing:0.5px;
+#ae-header h2 { color:white; font-size:15px; font-weight:800; display:flex; align-items:center; gap:8px; }
+#ae-done {
+  background:#00a650; color:white; border:none; padding:7px 18px;
+  border-radius:5px; font-size:12px; font-weight:700; cursor:pointer; transition:background 0.15s;
 }
-.char-tab.active { color:white; border-bottom-color:#e3393e; }
-.char-tab-content { display:none; flex:1; overflow-y:auto; padding:14px; }
-.char-tab-content.visible { display:block; }
-.char-section { margin-bottom:16px; }
-.char-section-label { font-size:10px; font-weight:700; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
-.color-row { display:flex; flex-wrap:wrap; gap:7px; }
-.color-swatch {
-  width:30px; height:30px; border-radius:5px; cursor:pointer;
-  border:2px solid transparent; transition:border-color 0.12s, transform 0.1s;
-  position:relative;
-}
-.color-swatch.selected { border-color:white; transform:scale(1.15); }
-.color-swatch:hover { transform:scale(1.1); }
+#ae-done:hover { background:#009046; }
+#ae-body { display:flex; flex:1; overflow:hidden; }
 
-/* Hat grid */
-.hat-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
-.hat-btn {
-  background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.1);
-  border-radius:7px; padding:10px 6px 6px; cursor:pointer;
-  display:flex; flex-direction:column; align-items:center; gap:5px;
-  transition:background 0.12s, border-color 0.12s;
+/* CATALOG */
+#ae-catalog { width:44%; display:flex; flex-direction:column; border-right:1px solid rgba(255,255,255,0.07); }
+#ae-cats { display:flex; overflow-x:auto; flex-shrink:0; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.07); }
+#ae-cats::-webkit-scrollbar { display:none; }
+.ae-cat {
+  flex-shrink:0; padding:9px 13px; background:none; border:none;
+  color:rgba(255,255,255,0.4); font-size:11px; font-weight:700; cursor:pointer;
+  border-bottom:2px solid transparent; transition:color 0.12s,border-color 0.12s;
+  text-transform:uppercase; letter-spacing:0.4px; white-space:nowrap;
 }
-.hat-btn:hover { background:rgba(255,255,255,0.10); }
-.hat-btn.selected { border-color:#e3393e; background:rgba(227,57,62,0.15); }
-.hat-icon { width:40px; height:36px; display:flex; align-items:flex-end; justify-content:center; position:relative; }
-.hat-label { font-size:9px; color:rgba(255,255,255,0.6); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; text-align:center; }
+.ae-cat.active { color:white; border-bottom-color:#e3393e; }
+#ae-items {
+  flex:1; overflow-y:auto; padding:10px;
+  display:flex; flex-wrap:wrap; gap:7px; align-content:flex-start;
+}
+#ae-items::-webkit-scrollbar { width:3px; }
+#ae-items::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:2px; }
+.ae-item {
+  width:76px; cursor:pointer; border-radius:8px;
+  border:2px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05);
+  display:flex; flex-direction:column; align-items:center; overflow:hidden;
+  transition:border-color 0.12s,transform 0.1s; user-select:none;
+}
+.ae-item:hover { border-color:rgba(255,255,255,0.28); transform:scale(1.04); }
+.ae-item.equipped { border-color:#e3393e; background:rgba(227,57,62,0.18); }
+.ae-item.dragging { opacity:0.5; }
+.ae-item-swatch {
+  width:100%; height:54px; display:flex; align-items:center;
+  justify-content:center; font-size:26px; line-height:1;
+}
+.ae-item-label {
+  width:100%; padding:3px 2px 4px; font-size:8.5px; font-weight:700;
+  color:rgba(255,255,255,0.6); text-align:center; text-transform:uppercase;
+  letter-spacing:0.2px; background:rgba(0,0,0,0.28); white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
+}
 
-/* Accessory toggles */
-.acc-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.acc-btn {
-  background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.10);
-  border-radius:7px; padding:12px 8px 8px; cursor:pointer;
-  display:flex; flex-direction:column; align-items:center; gap:6px;
-  transition:background 0.12s, border-color 0.12s;
+/* PREVIEW */
+#ae-preview {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:10px; padding:16px;
+  border-right:1px solid rgba(255,255,255,0.07);
 }
-.acc-btn:hover { background:rgba(255,255,255,0.10); }
-.acc-btn.selected { border-color:#00a650; background:rgba(0,166,80,0.18); }
-.acc-icon { font-size:26px; line-height:1; }
-.acc-label { font-size:9px; color:rgba(255,255,255,0.6); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
-.acc-badge {
-  font-size:9px; font-weight:700; padding:1px 6px; border-radius:8px;
-  background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.35);
+#ae-canvas-wrap {
+  border:2px dashed rgba(255,255,255,0.14); border-radius:12px; padding:14px;
+  background:rgba(255,255,255,0.03); transition:border-color 0.15s,background 0.15s; cursor:default;
 }
-.acc-btn.selected .acc-badge { background:#00a650; color:white; }
+#ae-canvas-wrap.drag-over { border-color:#e3393e; background:rgba(227,57,62,0.1); }
+#ae-drop-hint { color:rgba(255,255,255,0.22); font-size:10px; text-align:center; margin-top:4px; }
 
-/* Scrollbar */
-.char-tab-content::-webkit-scrollbar { width:3px; }
-.char-tab-content::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.18); border-radius:2px; }
+/* WEARING */
+#ae-wearing {
+  width:200px; display:flex; flex-direction:column; gap:0;
+  overflow-y:auto; padding:12px 10px;
+}
+#ae-wearing::-webkit-scrollbar { width:3px; }
+#ae-wearing::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:2px; }
+.ae-wear-label {
+  font-size:9px; font-weight:700; color:rgba(255,255,255,0.35);
+  text-transform:uppercase; letter-spacing:1px; margin:8px 0 5px;
+}
+.ae-wear-label:first-child { margin-top:0; }
+.ae-slot {
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+  border-radius:6px; padding:7px 9px; display:flex; align-items:center; gap:8px;
+  cursor:pointer; transition:background 0.12s; margin-bottom:4px;
+}
+.ae-slot:hover { background:rgba(255,255,255,0.08); }
+.ae-slot.drag-over { border-color:#e3393e !important; background:rgba(227,57,62,0.15) !important; }
+.ae-slot-icon { font-size:16px; flex-shrink:0; }
+.ae-slot-swatch { width:18px; height:18px; border-radius:50%; flex-shrink:0; display:inline-block; }
+.ae-slot-info { flex:1; min-width:0; }
+.ae-slot-type { font-size:8px; color:rgba(255,255,255,0.3); font-weight:700; text-transform:uppercase; }
+.ae-slot-val { font-size:10px; color:white; font-weight:600; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ae-slot-x { color:rgba(255,255,255,0.2); font-size:12px; cursor:pointer; flex-shrink:0; }
+.ae-slot-x:hover { color:#e3393e; }
+.ae-gear-slot-row { display:flex; align-items:center; gap:6px; padding:3px 0; font-size:11px; color:white; }
+.ae-gear-slot-row .ae-slot-val { flex:1; font-size:10px; color:rgba(255,255,255,0.7); }
+.ae-gear-slot-row .ae-slot-x { color:rgba(255,255,255,0.2); font-size:11px; cursor:pointer; }
+.ae-gear-slot-row .ae-slot-x:hover { color:#e3393e; }
+.ae-outfit-btn {
+  display:block; width:100%; margin-bottom:4px; padding:6px 9px;
+  border-radius:5px; border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.04); color:white; font-size:11px; font-weight:600;
+  cursor:pointer; text-align:left; transition:background 0.12s;
+}
+.ae-outfit-btn:hover { background:rgba(255,255,255,0.1); }
+#ae-clear {
+  margin-top:auto; padding-top:8px; width:100%; padding:8px; border-radius:5px;
+  border:none; background:rgba(227,57,62,0.22); color:#ff8888;
+  font-size:10px; font-weight:700; cursor:pointer; transition:background 0.12s; margin-top:10px;
+}
+#ae-clear:hover { background:rgba(227,57,62,0.42); }
+
+/* FLOATING AVATAR BUTTON */
+#avatar-fab {
+  position:fixed; bottom:74px; left:50%; transform:translateX(-50%);
+  z-index:150; background:linear-gradient(135deg,#e3393e,#ff5a5f);
+  border:none; border-radius:28px; padding:9px 18px;
+  display:flex; align-items:center; gap:9px; cursor:pointer;
+  box-shadow:0 4px 22px rgba(227,57,62,0.55); color:white;
+  font-size:12px; font-weight:800; letter-spacing:0.5px;
+  animation:fab-pulse 2.4s ease-in-out infinite;
+}
+#avatar-fab:hover { animation:none; transform:translateX(-50%) scale(1.06); }
+@keyframes fab-pulse {
+  0%,100% { box-shadow:0 4px 22px rgba(227,57,62,0.55); }
+  50% { box-shadow:0 4px 34px rgba(227,57,62,0.95),0 0 0 7px rgba(227,57,62,0.18); }
+}
+#avatar-fab-canvas { border-radius:50%; border:2px solid rgba(255,255,255,0.4); background:#222; }
+
+@media (max-width:768px) {
+  #ae-catalog { width:52%; }
+  #ae-wearing { width:150px; }
+  .ae-item { width:66px; }
+  .ae-item-swatch { height:46px; font-size:22px; }
+  #avatar-fab { bottom:260px; }
+}
 
 /* OVERLAY */
 #overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; background:rgba(8,8,14,0.93); z-index:200; }
@@ -181,50 +246,80 @@ body { overflow:hidden; background:#87CEEB; font-family:'Helvetica Neue',Helveti
   <div class="touch-btn" id="btn-delete">&#128465;<br>DELETE</div>
 </div>
 
-<!-- CHARACTER CUSTOMIZATION PANEL -->
-<div id="char-panel">
-  <div id="char-panel-header">
-    <h2>&#128100; Avatar</h2>
-    <button id="char-close" onclick="toggleCharPanel()">&#10005;</button>
+<!-- AVATAR EDITOR (full-screen) -->
+<div id="avatar-editor">
+  <div id="ae-header">
+    <h2>&#128087; Avatar Editor</h2>
+    <button id="ae-done" onclick="toggleAvatarEditor()">Done &#10003;</button>
   </div>
-  <div class="char-tabs">
-    <button class="char-tab active" onclick="showCharTab('body',this)">Body</button>
-    <button class="char-tab" onclick="showCharTab('hats',this)">Hats</button>
-    <button class="char-tab" onclick="showCharTab('accessories',this)">Gear</button>
-  </div>
-
-  <!-- BODY TAB -->
-  <div class="char-tab-content visible" id="ctab-body">
-    <div class="char-section">
-      <div class="char-section-label">Skin Color</div>
-      <div class="color-row" id="swatch-skin"></div>
+  <div id="ae-body">
+    <!-- CATALOG -->
+    <div id="ae-catalog">
+      <div id="ae-cats">
+        <button class="ae-cat active" onclick="filterCatalog('all',this)">All</button>
+        <button class="ae-cat" onclick="filterCatalog('hat',this)">Hats</button>
+        <button class="ae-cat" onclick="filterCatalog('shirt',this)">Shirts</button>
+        <button class="ae-cat" onclick="filterCatalog('pants',this)">Pants</button>
+        <button class="ae-cat" onclick="filterCatalog('gear',this)">Gear</button>
+        <button class="ae-cat" onclick="filterCatalog('skin',this)">Skin</button>
+      </div>
+      <div id="ae-items"></div>
     </div>
-    <div class="char-section">
-      <div class="char-section-label">Shirt Color</div>
-      <div class="color-row" id="swatch-shirt"></div>
+    <!-- PREVIEW -->
+    <div id="ae-preview">
+      <div id="ae-canvas-wrap"
+           ondragover="aeDragOver(event,'any')"
+           ondragleave="aeDragLeave(event)"
+           ondrop="aeDrop(event,'any')">
+        <canvas id="ae-avatar-canvas" width="160" height="240"></canvas>
+      </div>
+      <div id="ae-drop-hint">&#8592; Click items or drag here to equip</div>
     </div>
-    <div class="char-section">
-      <div class="char-section-label">Pants Color</div>
-      <div class="color-row" id="swatch-pants"></div>
-    </div>
-  </div>
-
-  <!-- HATS TAB -->
-  <div class="char-tab-content" id="ctab-hats">
-    <div class="char-section">
-      <div class="char-section-label">Choose a Hat</div>
-      <div class="hat-grid" id="hat-grid"></div>
-    </div>
-  </div>
-
-  <!-- ACCESSORIES TAB -->
-  <div class="char-tab-content" id="ctab-accessories">
-    <div class="char-section">
-      <div class="char-section-label">Accessories (mix &amp; match)</div>
-      <div class="acc-grid" id="acc-grid"></div>
+    <!-- WEARING -->
+    <div id="ae-wearing">
+      <div class="ae-wear-label">Wearing</div>
+      <div class="ae-slot" ondragover="aeDragOver(event,'hat')" ondragleave="aeDragLeave(event)" ondrop="aeDrop(event,'hat')">
+        <span class="ae-slot-icon">&#127913;</span>
+        <div class="ae-slot-info">
+          <div class="ae-slot-type">Hat</div>
+          <div class="ae-slot-val" id="slot-hat-val">None</div>
+        </div>
+        <span class="ae-slot-x" onclick="removeSlot('hat')">&#10005;</span>
+      </div>
+      <div class="ae-slot" ondragover="aeDragOver(event,'shirt')" ondragleave="aeDragLeave(event)" ondrop="aeDrop(event,'shirt')">
+        <span class="ae-slot-swatch" id="slot-shirt-swatch" style="background:#111111"></span>
+        <div class="ae-slot-info">
+          <div class="ae-slot-type">Shirt</div>
+          <div class="ae-slot-val" id="slot-shirt-val">Black Tee</div>
+        </div>
+      </div>
+      <div class="ae-slot" ondragover="aeDragOver(event,'pants')" ondragleave="aeDragLeave(event)" ondrop="aeDrop(event,'pants')">
+        <span class="ae-slot-swatch" id="slot-pants-swatch" style="background:#1a1a1a"></span>
+        <div class="ae-slot-info">
+          <div class="ae-slot-type">Pants</div>
+          <div class="ae-slot-val" id="slot-pants-val">Dark</div>
+        </div>
+      </div>
+      <div class="ae-slot" ondragover="aeDragOver(event,'skin')" ondragleave="aeDragLeave(event)" ondrop="aeDrop(event,'skin')">
+        <span class="ae-slot-swatch" id="slot-skin-swatch" style="background:#FFCC99"></span>
+        <div class="ae-slot-info">
+          <div class="ae-slot-type">Skin</div>
+          <div class="ae-slot-val" id="slot-skin-val">Default</div>
+        </div>
+      </div>
+      <div class="ae-wear-label">Gear</div>
+      <div id="ae-gear-slots"></div>
+      <div class="ae-wear-label">Outfits</div>
+      <div id="ae-outfit-presets"></div>
+      <button id="ae-clear" onclick="clearOutfit()">Clear All</button>
     </div>
   </div>
 </div>
+
+<button id="avatar-fab" onclick="toggleAvatarEditor()" style="display:none">
+  <canvas id="avatar-fab-canvas" width="32" height="32"></canvas>
+  CUSTOMIZE AVATAR
+</button>
 
 <div id="overlay">
   <div id="overlay-logo">
@@ -247,7 +342,6 @@ body { overflow:hidden; background:#87CEEB; font-family:'Helvetica Neue',Helveti
 <div id="topbar">
   <button id="menu-btn">R</button>
   <span id="game-title">RobloxCopy — Red Path Obby</span>
-  <button id="avatar-btn" onclick="toggleCharPanel()">&#128100; Avatar</button>
   <div id="topbar-right">
     <span id="robux-pill">&#9670; 0</span>
     <span id="player-name">Player1</span>
@@ -287,14 +381,9 @@ const HEAD_TOP = PH - 0.6 + 0.8;  // y of top of head in player-local space = 5.
 
 // ─── CHARACTER STYLE STATE ───────────────────────────────────
 const charStyle = {
-  skin:   0xFFCC99,
-  shirt:  0x111111,
-  pants:  0x1a1a1a,
-  hat:    'none',
-  cape:   false,
-  sword:  false,
-  wings:  false,
-  backpack: false,
+  skin:0xFFCC99, shirt:0x111111, pants:0x1a1a1a,
+  hat:'none',
+  cape:false, sword:false, wings:false, backpack:false, tie:false, shield:false,
 };
 
 // Shared materials (updated when user customizes)
@@ -506,13 +595,53 @@ function buildHat(type) {
 
   else if (type==='halo') {
     const mat=new THREE.MeshPhongMaterial({color:0xFFEE44,shininess:250,emissive:0x665500});
-    // Approximate torus with 8 box segments arranged in a ring
     for (let i=0;i<8;i++) {
       const seg=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.18,0.45),mat);
       const a=i/8*Math.PI*2;
       seg.position.set(Math.cos(a)*1.2,0.65,Math.sin(a)*1.2);
       g.add(seg);
     }
+  }
+
+  else if (type==='knight') {
+    const hm=new THREE.MeshPhongMaterial({color:0x999999,shininess:160,specular:0x555555});
+    const vm=new THREE.MeshPhongMaterial({color:0x333333,shininess:80});
+    const helm=new THREE.Mesh(new THREE.BoxGeometry(2.1,1.9,2.1),hm); helm.position.y=0.95; g.add(helm);
+    const visor=new THREE.Mesh(new THREE.BoxGeometry(1.62,0.5,2.12),vm); visor.position.y=0.5; g.add(visor);
+    [-0.46,0.46].forEach(ox=>{const s=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.48,2.14),vm);s.position.x=ox;s.position.y=0.5;g.add(s);});
+  }
+
+  else if (type==='santa') {
+    const rm=new THREE.MeshPhongMaterial({color:0xCC2222,shininess:80});
+    const wm=new THREE.MeshPhongMaterial({color:0xFFFFFF,shininess:40});
+    const brim=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.35,2.4),wm); brim.position.y=0.175; g.add(brim);
+    [[1.8,0.6,0.65],[1.3,0.7,1.3],[0.7,0.7,1.95]].forEach(([w,h,y])=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),rm);m.position.y=y;g.add(m);});
+    const pom=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5),wm); pom.position.y=2.55; g.add(pom);
+  }
+
+  else if (type==='wizard') {
+    const wm=new THREE.MeshPhongMaterial({color:0x6622AA,shininess:100,emissive:0x220055});
+    const band=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.32,2.0),new THREE.MeshPhongMaterial({color:0x9933CC,shininess:120})); band.position.y=0.16; g.add(band);
+    [[1.7,0.6,0.62],[1.1,0.8,1.3],[0.55,1.2,2.1],[0.22,0.6,2.9]].forEach(([w,h,y])=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),wm);m.position.y=y;g.add(m);});
+    const sm=new THREE.MeshPhongMaterial({color:0xFFD700,shininess:220,emissive:0x443300});
+    const star=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.4,0.4),sm); star.position.y=3.55; star.rotation.y=Math.PI/4; g.add(star);
+  }
+
+  else if (type==='pirate') {
+    const pm=new THREE.MeshPhongMaterial({color:0x111111,shininess:60});
+    const brim=new THREE.Mesh(new THREE.BoxGeometry(3.0,0.2,1.6),pm); brim.position.y=0.1; g.add(brim);
+    const crown=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.9,1.4),pm); crown.position.y=0.65; g.add(crown);
+    const skull=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.55,0.15),new THREE.MeshPhongMaterial({color:0xEEEEEE})); skull.position.set(0,0.85,0.73); g.add(skull);
+    const cm=new THREE.MeshPhongMaterial({color:0x222222});
+    const ch=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.12,0.16),cm); ch.position.set(0,0.65,0.74); g.add(ch);
+    const cv=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.4,0.16),cm); cv.position.set(0,0.65,0.74); g.add(cv);
+  }
+
+  else if (type==='beanie') {
+    const cols=[0xCC6600,0xFF8800,0xCC6600,0xFF8800];
+    const specs=[[1.85,0.35],[1.65,0.35],[1.35,0.32],[1.0,0.28]];
+    let yy=0; specs.forEach(([w,h],i)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),new THREE.MeshPhongMaterial({color:cols[i],shininess:60}));m.position.y=yy+h/2;g.add(m);yy+=h;});
+    const pom=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.45,0.45),new THREE.MeshPhongMaterial({color:0xFF8800,shininess:60})); pom.position.y=yy+0.22; g.add(pom);
   }
 
   player.add(g);
@@ -593,123 +722,383 @@ function buildBackpack(on) {
   player.add(g); charParts.backpackGroup=g;
 }
 
+function buildTie(on){
+  if(charParts.tieGroup){player.remove(charParts.tieGroup);charParts.tieGroup=null;}
+  if(!on)return;
+  const g=new THREE.Group();
+  const mat=new THREE.MeshPhongMaterial({color:0xCC2222,shininess:80});
+  const knot=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.45,0.22),mat); knot.position.set(0,2.1,0.92); g.add(knot);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(0.32,1.6,0.18),mat); body.position.set(0,1.15,0.92); g.add(body);
+  const tip=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.4,0.18),mat); tip.position.set(0,0.3,0.92); g.add(tip);
+  player.add(g); charParts.tieGroup=g;
+}
+
+function buildShield(on){
+  if(charParts.shieldGroup){player.remove(charParts.shieldGroup);charParts.shieldGroup=null;}
+  if(!on)return;
+  const g=new THREE.Group();
+  const mat=new THREE.MeshPhongMaterial({color:0x888888,shininess:140,specular:0x444444});
+  const face=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.8,0.22),mat); g.add(face);
+  const boss=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.45,0.25),new THREE.MeshPhongMaterial({color:0xFFD700,shininess:180,emissive:0x332200})); boss.position.z=0.18; g.add(boss);
+  const trim=new THREE.Mesh(new THREE.BoxGeometry(1.44,1.84,0.12),new THREE.MeshPhongMaterial({color:0x554400,shininess:100})); trim.position.z=-0.1; g.add(trim);
+  g.position.set(-2.2,1.0,0);
+  player.add(g); charParts.shieldGroup=g;
+}
+
 function applyAccessories() {
-  buildCape(charStyle.cape);
-  buildSword(charStyle.sword);
-  buildWings(charStyle.wings);
-  buildBackpack(charStyle.backpack);
+  buildCape(charStyle.cape); buildSword(charStyle.sword);
+  buildWings(charStyle.wings); buildBackpack(charStyle.backpack);
+  buildTie(charStyle.tie); buildShield(charStyle.shield);
 }
 
-// ─── CUSTOMIZATION UI ────────────────────────────────────────
-let charPanelOpen=false;
+// ─── AVATAR EDITOR ───────────────────────────────────────────
+let avatarEditorOpen=false;
 
-function toggleCharPanel() {
-  charPanelOpen=!charPanelOpen;
-  document.getElementById('char-panel').classList.toggle('open',charPanelOpen);
+const CATALOG=[
+  // HATS
+  {type:'hat',id:'none',    label:'No Hat',     icon:'&#128683;', color:'#444'},
+  {type:'hat',id:'tophat',  label:'Top Hat',    icon:'&#127913;', color:'#111111'},
+  {type:'hat',id:'crown',   label:'Crown',      icon:'&#128081;', color:'#FFD700'},
+  {type:'hat',id:'cap',     label:'Cap',        icon:'&#129346;', color:'#CC2222'},
+  {type:'hat',id:'cowboy',  label:'Cowboy',     icon:'&#129312;', color:'#7B4A2D'},
+  {type:'hat',id:'party',   label:'Party Hat',  icon:'&#127881;', color:'#FF66AA'},
+  {type:'hat',id:'halo',    label:'Halo',       icon:'&#128519;', color:'#FFD700'},
+  {type:'hat',id:'knight',  label:'Knight',     icon:'&#128737;', color:'#888888'},
+  {type:'hat',id:'santa',   label:'Santa',      icon:'&#127877;', color:'#CC2222'},
+  {type:'hat',id:'wizard',  label:'Wizard',     icon:'&#129497;', color:'#6622AA'},
+  {type:'hat',id:'pirate',  label:'Pirate',     icon:'&#9760;',   color:'#222222'},
+  {type:'hat',id:'beanie',  label:'Beanie',     icon:'&#129526;', color:'#CC6600'},
+  // SHIRTS
+  {type:'shirt',id:'shirt-black',   label:'Black Tee',    color:'#111111', c:0x111111},
+  {type:'shirt',id:'shirt-white',   label:'White Tee',    color:'#EEEEEE', c:0xEEEEEE},
+  {type:'shirt',id:'shirt-red',     label:'Red Hoodie',   color:'#CC2222', c:0xCC2222},
+  {type:'shirt',id:'shirt-navy',    label:'Navy Blue',    color:'#1a3a6b', c:0x1a3a6b},
+  {type:'shirt',id:'shirt-green',   label:'Forest Green', color:'#22AA44', c:0x22AA44},
+  {type:'shirt',id:'shirt-gold',    label:'Gold',         color:'#FFD700', c:0xFFD700},
+  {type:'shirt',id:'shirt-orange',  label:'Orange',       color:'#FF6600', c:0xFF6600},
+  {type:'shirt',id:'shirt-purple',  label:'Purple',       color:'#9933CC', c:0x9933CC},
+  {type:'shirt',id:'shirt-cyan',    label:'Cyan',         color:'#00CCCC', c:0x00CCCC},
+  {type:'shirt',id:'shirt-pink',    label:'Pink',         color:'#FF66AA', c:0xFF66AA},
+  {type:'shirt',id:'shirt-brown',   label:'Brown',        color:'#795548', c:0x795548},
+  {type:'shirt',id:'shirt-slate',   label:'Slate Blue',   color:'#607D8B', c:0x607D8B},
+  // PANTS
+  {type:'pants',id:'pants-dark',    label:'Dark',         color:'#1a1a1a', c:0x1a1a1a},
+  {type:'pants',id:'pants-jeans',   label:'Jeans',        color:'#3366AA', c:0x3366AA},
+  {type:'pants',id:'pants-camo',    label:'Camo',         color:'#2C5F2E', c:0x2C5F2E},
+  {type:'pants',id:'pants-gray',    label:'Gray',         color:'#4A4A4A', c:0x4A4A4A},
+  {type:'pants',id:'pants-brown',   label:'Brown',        color:'#8B4513', c:0x8B4513},
+  {type:'pants',id:'pants-red',     label:'Red',          color:'#CC2222', c:0xCC2222},
+  {type:'pants',id:'pants-white',   label:'White',        color:'#FFFFFF', c:0xFFFFFF},
+  {type:'pants',id:'pants-orange',  label:'Orange',       color:'#FF6600', c:0xFF6600},
+  {type:'pants',id:'pants-navy',    label:'Navy',         color:'#222266', c:0x222266},
+  {type:'pants',id:'pants-charcoal',label:'Charcoal',     color:'#555555', c:0x555555},
+  {type:'pants',id:'pants-olive',   label:'Olive',        color:'#2D4A1E', c:0x2D4A1E},
+  {type:'pants',id:'pants-purple',  label:'Purple',       color:'#7B1FA2', c:0x7B1FA2},
+  // GEAR
+  {type:'gear',id:'cape',     label:'Cape',     icon:'&#129464;', color:'#CC2222', key:'cape'},
+  {type:'gear',id:'sword',    label:'Sword',    icon:'&#9876;',   color:'#AAAAAA', key:'sword'},
+  {type:'gear',id:'wings',    label:'Wings',    icon:'&#129413;', color:'#CCDDFF', key:'wings'},
+  {type:'gear',id:'backpack', label:'Backpack', icon:'&#127874;', color:'#2E7D32', key:'backpack'},
+  {type:'gear',id:'tie',      label:'Tie',      icon:'&#128084;', color:'#CC2222', key:'tie'},
+  {type:'gear',id:'shield',   label:'Shield',   icon:'&#128737;', color:'#888888', key:'shield'},
+  // SKIN
+  {type:'skin',id:'skin-ivory',  label:'Ivory',   color:'#FFDBB5', c:0xFFDBB5},
+  {type:'skin',id:'skin-light',  label:'Light',   color:'#F5B88A', c:0xF5B88A},
+  {type:'skin',id:'skin-tan',    label:'Tan',     color:'#E8A07A', c:0xE8A07A},
+  {type:'skin',id:'skin-medium', label:'Medium',  color:'#C68642', c:0xC68642},
+  {type:'skin',id:'skin-dark',   label:'Dark',    color:'#8D5524', c:0x8D5524},
+  {type:'skin',id:'skin-deeper', label:'Deeper',  color:'#4A2912', c:0x4A2912},
+  {type:'skin',id:'skin-pale',   label:'Pale',    color:'#FFFDE7', c:0xFFFDE7},
+  {type:'skin',id:'skin-def',    label:'Default', color:'#FFCC99', c:0xFFCC99},
+];
+
+const OUTFITS=[
+  {label:'Hero',   hat:'tophat', shirt:0xCC2222, pants:0x1a1a1a, gear:{cape:true}},
+  {label:'Ninja',  hat:'none',   shirt:0x111111, pants:0x1a1a1a, gear:{}},
+  {label:'Royal',  hat:'crown',  shirt:0x9933CC, pants:0x222266, gear:{}},
+  {label:'Cowboy', hat:'cowboy', shirt:0x795548, pants:0x8B4513, gear:{}},
+  {label:'Wizard', hat:'wizard', shirt:0x6622AA, pants:0x222266, gear:{cape:true}},
+  {label:'Pirate', hat:'pirate', shirt:0x222222, pants:0x1a1a1a, gear:{sword:true}},
+  {label:'Knight', hat:'knight', shirt:0x888888, pants:0x555555, gear:{shield:true}},
+  {label:'Santa',  hat:'santa',  shirt:0xCC2222, pants:0x1a1a1a, gear:{}},
+];
+
+let catalogFilter='all', draggedItem=null;
+
+function toggleAvatarEditor(){
+  avatarEditorOpen=!avatarEditorOpen;
+  document.getElementById('avatar-editor').classList.toggle('open',avatarEditorOpen);
+  const fab=document.getElementById('avatar-fab');
+  if(fab)fab.style.display=avatarEditorOpen?'none':'flex';
+  if(avatarEditorOpen){drawAvatarPreview();}
 }
 
-function showCharTab(id, btn) {
-  document.querySelectorAll('.char-tab-content').forEach(el=>el.classList.remove('visible'));
-  document.querySelectorAll('.char-tab').forEach(el=>el.classList.remove('active'));
-  document.getElementById('ctab-'+id).classList.add('visible');
+function filterCatalog(type,btn){
+  catalogFilter=type;
+  document.querySelectorAll('.ae-cat').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  renderCatalog();
 }
 
-// Color palette definitions
-const SKIN_COLORS=[
-  {hex:'#FFDBB5',c:0xFFDBB5},{hex:'#F5B88A',c:0xF5B88A},{hex:'#E8A07A',c:0xE8A07A},
-  {hex:'#C68642',c:0xC68642},{hex:'#8D5524',c:0x8D5524},{hex:'#4A2912',c:0x4A2912},
-  {hex:'#FFFDE7',c:0xFFFDE7},{hex:'#FFCC99',c:0xFFCC99},
-];
-const SHIRT_COLORS=[
-  {hex:'#111111',c:0x111111},{hex:'#FFFFFF',c:0xFFFFFF},{hex:'#CC2222',c:0xCC2222},
-  {hex:'#2255CC',c:0x2255CC},{hex:'#22AA44',c:0x22AA44},{hex:'#FFD700',c:0xFFD700},
-  {hex:'#FF6600',c:0xFF6600},{hex:'#9933CC',c:0x9933CC},{hex:'#00CCCC',c:0x00CCCC},
-  {hex:'#FF66AA',c:0xFF66AA},{hex:'#795548',c:0x795548},{hex:'#607D8B',c:0x607D8B},
-];
-const PANTS_COLORS=[
-  {hex:'#1a1a1a',c:0x1a1a1a},{hex:'#3366AA',c:0x3366AA},{hex:'#2C5F2E',c:0x2C5F2E},
-  {hex:'#4A4A4A',c:0x4A4A4A},{hex:'#8B4513',c:0x8B4513},{hex:'#CC2222',c:0xCC2222},
-  {hex:'#FFFFFF',c:0xFFFFFF},{hex:'#FF6600',c:0xFF6600},{hex:'#222266',c:0x222266},
-  {hex:'#555555',c:0x555555},{hex:'#2D4A1E',c:0x2D4A1E},{hex:'#7B1FA2',c:0x7B1FA2},
-];
-
-const HATS=[
-  {id:'none',  label:'None',   icon:'🚫'},
-  {id:'tophat',label:'Top Hat',icon:'🎩'},
-  {id:'crown', label:'Crown',  icon:'👑'},
-  {id:'cap',   label:'Cap',    icon:'🧢'},
-  {id:'cowboy',label:'Cowboy', icon:'🤠'},
-  {id:'party', label:'Party',  icon:'🎉'},
-  {id:'halo',  label:'Halo',   icon:'😇'},
-];
-
-const ACCESSORIES=[
-  {id:'cape',     label:'Cape',     icon:'🦸', key:'cape'},
-  {id:'sword',    label:'Sword',    icon:'⚔️',  key:'sword'},
-  {id:'wings',    label:'Wings',    icon:'🪽',  key:'wings'},
-  {id:'backpack', label:'Backpack', icon:'🎒', key:'backpack'},
-];
-
-function buildCharUI() {
-  // Skin swatches
-  makeSwatch('swatch-skin', SKIN_COLORS, 'skin', c=>{charStyle.skin=c; applyCharColors();});
-  makeSwatch('swatch-shirt',SHIRT_COLORS,'shirt',c=>{charStyle.shirt=c; applyCharColors();});
-  makeSwatch('swatch-pants',PANTS_COLORS,'pants',c=>{charStyle.pants=c; applyCharColors();});
-
-  // Hat grid
-  const hatGrid=document.getElementById('hat-grid');
-  HATS.forEach(h=>{
-    const btn=document.createElement('button');
-    btn.className='hat-btn'+(charStyle.hat===h.id?' selected':'');
-    btn.id='hat-btn-'+h.id;
-    btn.innerHTML=`<div class="hat-icon" style="font-size:28px;line-height:1">${h.icon}</div><div class="hat-label">${h.label}</div>`;
-    btn.onclick=()=>{
-      document.querySelectorAll('.hat-btn').forEach(b=>b.classList.remove('selected'));
-      btn.classList.add('selected');
-      charStyle.hat=h.id;
-      buildHat(h.id);
-    };
-    hatGrid.appendChild(btn);
-  });
-
-  // Accessory grid
-  const accGrid=document.getElementById('acc-grid');
-  ACCESSORIES.forEach(a=>{
-    const btn=document.createElement('button');
-    btn.className='acc-btn'+(charStyle[a.key]?' selected':'');
-    btn.id='acc-btn-'+a.id;
-    const on=charStyle[a.key];
-    btn.innerHTML=`<div class="acc-icon">${a.icon}</div><div class="acc-label">${a.label}</div><div class="acc-badge">${on?'ON':'OFF'}</div>`;
-    btn.onclick=()=>{
-      charStyle[a.key]=!charStyle[a.key];
-      const nowOn=charStyle[a.key];
-      btn.classList.toggle('selected',nowOn);
-      btn.querySelector('.acc-badge').textContent=nowOn?'ON':'OFF';
-      // Apply just this accessory
-      if(a.key==='cape')     buildCape(nowOn);
-      if(a.key==='sword')    buildSword(nowOn);
-      if(a.key==='wings')    buildWings(nowOn);
-      if(a.key==='backpack') buildBackpack(nowOn);
-    };
-    accGrid.appendChild(btn);
+function renderCatalog(){
+  const el=document.getElementById('ae-items');
+  el.innerHTML='';
+  const items=catalogFilter==='all'?CATALOG:CATALOG.filter(i=>i.type===catalogFilter);
+  items.forEach(item=>{
+    const d=document.createElement('div');
+    d.className='ae-item'+(isEquipped(item)?' equipped':'');
+    d.draggable=true;
+    let swatchStyle='';
+    if(item.type==='shirt'||item.type==='pants'||item.type==='skin') swatchStyle=`background:${item.color}`;
+    d.innerHTML=`<div class="ae-item-swatch" style="${swatchStyle}">${item.icon||''}</div><div class="ae-item-label">${item.label}</div>`;
+    d.addEventListener('dragstart',e=>{draggedItem=item;e.dataTransfer.effectAllowed='copy';d.classList.add('dragging');});
+    d.addEventListener('dragend',()=>{draggedItem=null;d.classList.remove('dragging');});
+    d.addEventListener('click',()=>equipItem(item));
+    el.appendChild(d);
   });
 }
 
-function makeSwatch(containerId, palette, styleKey, onChange) {
-  const el=document.getElementById(containerId);
-  palette.forEach(p=>{
-    const s=document.createElement('div');
-    s.className='color-swatch'+(charStyle[styleKey]===p.c?' selected':'');
-    s.style.background=p.hex;
-    s.title=p.hex;
-    s.onclick=()=>{
-      el.querySelectorAll('.color-swatch').forEach(x=>x.classList.remove('selected'));
-      s.classList.add('selected');
-      charStyle[styleKey]=p.c;
-      onChange(p.c);
-    };
-    el.appendChild(s);
+function isEquipped(item){
+  if(item.type==='hat')   return charStyle.hat===item.id;
+  if(item.type==='shirt') return charStyle.shirt===item.c;
+  if(item.type==='pants') return charStyle.pants===item.c;
+  if(item.type==='skin')  return charStyle.skin===item.c;
+  if(item.type==='gear')  return !!charStyle[item.key];
+  return false;
+}
+
+function equipItem(item){
+  if(item.type==='hat'){
+    charStyle.hat=item.id; buildHat(item.id);
+    document.getElementById('slot-hat-val').textContent=item.label;
+  } else if(item.type==='shirt'){
+    charStyle.shirt=item.c; applyCharColors();
+    document.getElementById('slot-shirt-swatch').style.background=item.color;
+    document.getElementById('slot-shirt-val').textContent=item.label;
+  } else if(item.type==='pants'){
+    charStyle.pants=item.c; applyCharColors();
+    document.getElementById('slot-pants-swatch').style.background=item.color;
+    document.getElementById('slot-pants-val').textContent=item.label;
+  } else if(item.type==='skin'){
+    charStyle.skin=item.c; applyCharColors();
+    document.getElementById('slot-skin-swatch').style.background=item.color;
+    document.getElementById('slot-skin-val').textContent=item.label;
+  } else if(item.type==='gear'){
+    charStyle[item.key]=!charStyle[item.key];
+    applyGear(item.key,charStyle[item.key]);
+    refreshGearSlots();
+  }
+  renderCatalog(); drawAvatarPreview();
+  drawFabPreview();
+}
+
+function applyGear(key,on){
+  if(key==='cape')     buildCape(on);
+  if(key==='sword')    buildSword(on);
+  if(key==='wings')    buildWings(on);
+  if(key==='backpack') buildBackpack(on);
+  if(key==='tie')      buildTie(on);
+  if(key==='shield')   buildShield(on);
+}
+
+function removeSlot(type,id){
+  if(type==='hat') equipItem({type:'hat',id:'none',label:'No Hat',icon:'&#128683;',color:'#444'});
+  else if(type==='gear'){
+    const item=CATALOG.find(i=>i.type==='gear'&&i.id===id);
+    if(item){charStyle[item.key]=false;applyGear(item.key,false);refreshGearSlots();renderCatalog();drawAvatarPreview();}
+  }
+}
+
+function refreshGearSlots(){
+  const el=document.getElementById('ae-gear-slots');
+  el.innerHTML='';
+  const active=CATALOG.filter(i=>i.type==='gear'&&charStyle[i.key]);
+  if(!active.length){el.innerHTML='<div style="color:rgba(255,255,255,0.25);font-size:10px;padding:3px 0">None</div>';return;}
+  active.forEach(item=>{
+    const d=document.createElement('div');
+    d.className='ae-gear-slot-row';
+    d.innerHTML=`<span class="ae-slot-icon">${item.icon}</span><span class="ae-slot-val">${item.label}</span><span class="ae-slot-x" onclick="removeSlot('gear','${item.id}')">&#10005;</span>`;
+    el.appendChild(d);
+  });
+}
+
+function clearOutfit(){
+  ['cape','sword','wings','backpack','tie','shield'].forEach(k=>{if(charStyle[k]){charStyle[k]=false;applyGear(k,false);}});
+  charStyle.hat='none'; buildHat('none');
+  document.getElementById('slot-hat-val').textContent='No Hat';
+  refreshGearSlots(); renderCatalog(); drawAvatarPreview(); drawFabPreview();
+}
+
+function applyOutfit(preset){
+  clearOutfit();
+  charStyle.hat=preset.hat; buildHat(preset.hat);
+  charStyle.shirt=preset.shirt; charStyle.pants=preset.pants; applyCharColors();
+  Object.entries(preset.gear).forEach(([k,v])=>{charStyle[k]=v;applyGear(k,v);});
+  const hi=CATALOG.find(i=>i.type==='hat'&&i.id===preset.hat);
+  const si=CATALOG.find(i=>i.type==='shirt'&&i.c===preset.shirt);
+  const pi=CATALOG.find(i=>i.type==='pants'&&i.c===preset.pants);
+  if(hi)document.getElementById('slot-hat-val').textContent=hi.label;
+  if(si){document.getElementById('slot-shirt-val').textContent=si.label;document.getElementById('slot-shirt-swatch').style.background=si.color;}
+  if(pi){document.getElementById('slot-pants-val').textContent=pi.label;document.getElementById('slot-pants-swatch').style.background=pi.color;}
+  refreshGearSlots(); renderCatalog(); drawAvatarPreview(); drawFabPreview();
+}
+
+// Drag-and-drop
+function aeDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function aeDragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function aeDrop(e,slotType){
+  e.preventDefault();e.currentTarget.classList.remove('drag-over');
+  if(!draggedItem)return;
+  if(slotType==='any'||draggedItem.type===slotType)equipItem(draggedItem);
+}
+
+// ─── 2D AVATAR PREVIEW ───────────────────────────────────────
+function rRect(ctx,cx,y,w,h,r,fill){ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(cx-w/2,y,w,h,r);ctx.fill();}
+function shadeHex(hex,delta){const n=parseInt(hex.replace('#',''),16);const r=Math.max(0,Math.min(255,(n>>16&255)+delta)),g=Math.max(0,Math.min(255,(n>>8&255)+delta)),b=Math.max(0,Math.min(255,(n&255)+delta));return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');}
+
+function drawAvatarPreview(){
+  const canvas=document.getElementById('ae-avatar-canvas');
+  if(!canvas)return;
+  drawAvatarOnCanvas(canvas);
+}
+
+function drawFabPreview(){
+  const canvas=document.getElementById('avatar-fab-canvas');
+  if(!canvas)return;
+  drawAvatarOnCanvas(canvas,true);
+}
+
+function drawAvatarOnCanvas(canvas,mini){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  if(!mini){ctx.fillStyle='rgba(255,255,255,0.03)';ctx.beginPath();ctx.roundRect(0,0,W,H,10);ctx.fill();}
+
+  const scale=mini?0.18:1;
+  const cx=W/2,baseY=mini?H*0.15:52;
+  const skinHex='#'+charStyle.skin.toString(16).padStart(6,'0');
+  const shirtHex='#'+charStyle.shirt.toString(16).padStart(6,'0');
+  const pantsHex='#'+charStyle.pants.toString(16).padStart(6,'0');
+
+  const hw=mini?7:40,hh=mini?7:40;
+  const torsoY=baseY+hh+(mini?1:5),tw=mini?9:48,th=mini?10:54;
+  const aw=mini?3:17,ah=mini?10:48;
+  const lw=mini?4:21,lh=mini?12:56;
+
+  // Shadow
+  if(!mini){ctx.fillStyle='rgba(0,0,0,0.2)';ctx.beginPath();ctx.ellipse(cx,H-14,28,7,0,0,Math.PI*2);ctx.fill();}
+
+  // Legs
+  rRect(ctx,cx-(mini?2:12),torsoY+th,lw,lh,mini?2:4,pantsHex);
+  rRect(ctx,cx+(mini?2:12)-lw,torsoY+th,lw,lh,mini?2:4,shadeHex(pantsHex,-20));
+
+  // Arms
+  rRect(ctx,cx-tw/2-aw+(mini?0.5:3),torsoY+(mini?1:6),aw,ah,mini?2:4,shirtHex);
+  rRect(ctx,cx+tw/2-(mini?0.5:3),torsoY+(mini?1:6),aw,ah,mini?2:4,shadeHex(shirtHex,-15));
+
+  // Torso
+  rRect(ctx,cx,torsoY,tw,th,mini?2:5,shirtHex);
+  if(!mini){ctx.fillStyle='rgba(255,255,255,0.07)';ctx.fillRect(cx-tw/2+3,torsoY+3,tw*0.27,th-6);}
+
+  // Head
+  rRect(ctx,cx,baseY,hw,hh,mini?3:7,skinHex);
+  if(!mini){
+    // Eyes
+    ctx.fillStyle='#1a1a1a';
+    ctx.beginPath();ctx.ellipse(cx-9,baseY+18,4.5,5,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(cx+9,baseY+18,4.5,5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='white';
+    ctx.beginPath();ctx.ellipse(cx-7,baseY+16,1.5,1.5,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(cx+11,baseY+16,1.5,1.5,0,0,Math.PI*2);ctx.fill();
+    // Smile
+    ctx.strokeStyle='rgba(0,0,0,0.4)';ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.arc(cx,baseY+26,6,0.2,Math.PI-0.2);ctx.stroke();
+    // Tie
+    if(charStyle.tie){ctx.fillStyle='#CC2222';ctx.fillRect(cx-2,torsoY+3,4,20);ctx.beginPath();ctx.moveTo(cx-3,torsoY+23);ctx.lineTo(cx+3,torsoY+23);ctx.lineTo(cx,torsoY+30);ctx.closePath();ctx.fill();}
+  }
+
+  // Hat
+  drawHat2D(ctx,cx,baseY,hw,mini);
+
+  // Gear badges (small icons bottom-right, full canvas only)
+  if(!mini){
+    const activeGear=CATALOG.filter(i=>i.type==='gear'&&charStyle[i.key]);
+    ctx.font='14px serif';
+    activeGear.forEach((item,i)=>{
+      const parser=new DOMParser();
+      const doc=parser.parseFromString(`<span>${item.icon}</span>`,'text/html');
+      const text=doc.body.textContent||'';
+      ctx.fillText(text,W-20,H-14-i*18);
+    });
+  }
+}
+
+function drawHat2D(ctx,cx,headY,hw,mini){
+  const ht=charStyle.hat;
+  if(ht==='none')return;
+  const top=headY, s=mini?0.25:1;
+  ctx.save();
+  if(ht==='tophat'){
+    ctx.fillStyle='#111';ctx.fillRect(cx-(hw/2+5)*s,top-(3*s),(hw+10)*s,5*s);
+    ctx.fillRect(cx-13*s,top-32*s,26*s,31*s);
+    ctx.fillStyle='#CC2222';ctx.fillRect(cx-13*s,top-12*s,26*s,5*s);
+  } else if(ht==='crown'){
+    ctx.fillStyle='#FFD700';
+    ctx.fillRect(cx-18*s,top-9*s,36*s,9*s);
+    [[-14,20],[-6,28],[0,20],[6,28],[14,20]].forEach(([ox,h])=>{ctx.fillRect(cx+(ox-3)*s,top-(9+h)*s,6*s,h*s);});
+    ctx.fillStyle='#CC2222';ctx.beginPath();ctx.arc(cx,top-28*s,4*s,0,Math.PI*2);ctx.fill();
+  } else if(ht==='cap'){
+    ctx.fillStyle='#CC2222';
+    ctx.beginPath();ctx.ellipse(cx+6*s,top,hw*0.65*s,11*s,-.15,Math.PI,0);ctx.fill();
+    ctx.beginPath();ctx.ellipse(cx,top-8*s,hw*0.52*s,15*s,0,Math.PI,0);ctx.fill();
+  } else if(ht==='cowboy'){
+    ctx.fillStyle='#7B4A2D';
+    ctx.beginPath();ctx.ellipse(cx,top,(hw*0.7+8)*s,8*s,0,Math.PI,0);ctx.fill();
+    ctx.fillRect(cx-15*s,top-24*s,30*s,24*s);
+    ctx.fillStyle='#222';ctx.fillRect(cx-15*s,top-3*s,30*s,5*s);
+  } else if(ht==='party'){
+    ctx.fillStyle='#FF66AA';
+    ctx.beginPath();ctx.moveTo(cx-14*s,top);ctx.lineTo(cx+14*s,top);ctx.lineTo(cx,top-34*s);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#FFD700';ctx.fillRect(cx-6*s,top-14*s,5*s,14*s);ctx.fillRect(cx+4*s,top-14*s,5*s,14*s);
+  } else if(ht==='halo'){
+    ctx.strokeStyle='#FFD700';ctx.lineWidth=4*s;
+    ctx.beginPath();ctx.ellipse(cx,top-12*s,22*s,8*s,0,0,Math.PI*2);ctx.stroke();
+  } else if(ht==='knight'){
+    ctx.fillStyle='#999';ctx.fillRect(cx-(hw/2+2)*s,headY-2*s,(hw+4)*s,(40+8)*s);
+    ctx.fillStyle='#333';ctx.fillRect(cx-12*s,headY+16*s,24*s,14*s);
+    ctx.fillStyle='#aaa';[-6,6].forEach(ox=>ctx.fillRect(cx+(ox-3)*s,headY+16*s,6*s,14*s));
+  } else if(ht==='santa'){
+    ctx.fillStyle='#CC2222';
+    ctx.beginPath();ctx.moveTo(cx-22*s,top);ctx.lineTo(cx+22*s,top);ctx.lineTo(cx+14*s,top-18*s);ctx.lineTo(cx+2*s,top-36*s);ctx.lineTo(cx-18*s,top-28*s);ctx.closePath();ctx.fill();
+    ctx.fillStyle='white';ctx.fillRect(cx-22*s,top-6*s,44*s,8*s);
+    ctx.beginPath();ctx.arc(cx+4*s,top-38*s,7*s,0,Math.PI*2);ctx.fill();
+  } else if(ht==='wizard'){
+    ctx.fillStyle='#6622AA';
+    ctx.beginPath();ctx.moveTo(cx-18*s,top);ctx.lineTo(cx+18*s,top);ctx.lineTo(cx+6*s,top-18*s);ctx.lineTo(cx,top-44*s);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.2)';ctx.beginPath();ctx.arc(cx-4*s,top-30*s,3*s,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#FFD700';ctx.fillRect(cx-18*s,top-5*s,36*s,6*s);
+  } else if(ht==='pirate'){
+    ctx.fillStyle='#222';ctx.fillRect(cx-(hw/2+4)*s,top-18*s,(hw+8)*s,18*s);
+    ctx.fillRect(cx-(hw/2+10)*s,top-10*s,(hw+20)*s,10*s);
+    if(!mini){ctx.fillStyle='white';ctx.font='bold 16px serif';ctx.fillText('\u2620',cx-8,top-2);}
+  } else if(ht==='beanie'){
+    ctx.fillStyle='#CC6600';ctx.beginPath();ctx.ellipse(cx,top-5*s,hw*0.52*s,16*s,0,Math.PI,0);ctx.fill();
+    ctx.fillStyle='#AA4400';ctx.fillRect(cx-hw*0.52*s,top-8*s,hw*s,8*s);
+  }
+  ctx.restore();
+}
+
+function buildAvatarEditor(){
+  renderCatalog();
+  refreshGearSlots();
+  // Outfit presets
+  const outfitEl=document.getElementById('ae-outfit-presets');
+  OUTFITS.forEach(o=>{
+    const btn=document.createElement('button');
+    btn.className='ae-outfit-btn';
+    btn.textContent=o.label;
+    btn.onclick=()=>applyOutfit(o);
+    outfitEl.appendChild(btn);
   });
 }
 
@@ -775,7 +1164,7 @@ function buildObby(){
   [-6,0,6].forEach(ox=>{const s=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.6,1.6),sM);s.position.set(ox,10+PH2/2+10.8,-176);s.rotation.y=Math.PI/4;scene.add(s);});
 
   chatMsg('Follow the RED path to the finish!','#FF6666');
-  setTimeout(()=>chatMsg('Tap Avatar in top bar to customize your look!','#aaaaff'),2000);
+  setTimeout(()=>chatMsg('Click CUSTOMIZE AVATAR to customize your look!','#aaaaff'),2000);
   setTimeout(()=>chatMsg('Yellow gates save your checkpoint','#FFD700'),4000);
 }
 
@@ -923,7 +1312,7 @@ function updateLeaderboard(){
 document.addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(e.code.startsWith('Digit')){const n=parseInt(e.code.slice(5),10)-1;if(n>=0&&n<BLOCK_COLORS.length)selectSlot(n);}
-  if(e.code==='Escape'){if(charPanelOpen)toggleCharPanel();}
+  if(e.code==='Escape'){if(avatarEditorOpen)toggleAvatarEditor();}
 });
 document.addEventListener('keyup',e=>{keys[e.code]=false;});
 document.addEventListener('mousemove',e=>{
@@ -976,12 +1365,14 @@ function startGame(){
   document.getElementById('overlay').style.display='none';
   isActive=true;
   document.getElementById('crosshair').style.display='block';
+  const fab=document.getElementById('avatar-fab');
+  if(fab){fab.style.display='flex';drawFabPreview();}
   if(isMobile){document.getElementById('joystick-zone').style.display='block';document.getElementById('touch-buttons').style.display='flex';document.getElementById('controls-hint').style.display='none';}
   requestAnimationFrame(ts=>{prevTs=ts;gameLoop(ts);});
 }
 
 buildHotbar();
-buildCharUI();
+buildAvatarEditor();
 initScene();
 if(isMobile){document.getElementById('desktop-controls').style.display='none';document.getElementById('mobile-controls').style.display='inline';}
 </script>
