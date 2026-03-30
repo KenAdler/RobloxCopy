@@ -7,299 +7,309 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>RobloxCopy</title>
 <style>
+/* ===== RESET ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Arial, sans-serif; user-select: none; }
-#game-canvas { display: block; width: 100vw; height: 100vh; }
+body {
+  overflow: hidden; background: #6CB4E4;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  user-select: none;
+}
+#game-canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
 
-/* TOP BAR */
+/* ===== ROBLOX TOP BAR (matches actual Roblox client) ===== */
 #topbar {
-  position: fixed; top: 0; left: 0; right: 0; height: 38px;
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-  border-bottom: 2px solid #e3393e;
-  display: flex; align-items: center; padding: 0 14px;
-  z-index: 100; gap: 10px;
+  position: fixed; top: 0; left: 0; right: 0; height: 36px;
+  background: rgba(15,15,15,0.94);
+  display: flex; align-items: center; padding: 0 8px;
+  z-index: 100; gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-#logo { color: white; font-size: 20px; font-weight: 900; letter-spacing: -1px; }
-#logo span { color: #e3393e; }
-#topbar-center { flex: 1; display: flex; justify-content: center; gap: 4px; }
-.top-btn {
-  color: #bbb; font-size: 12px; cursor: pointer;
-  padding: 4px 12px; border-radius: 4px; transition: background 0.2s, color 0.2s;
+#menu-btn {
+  width: 28px; height: 28px; border: none; border-radius: 5px;
+  background: #e3393e; color: white; font-size: 15px; font-weight: 900;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-family: Arial Black, sans-serif; flex-shrink: 0;
 }
-.top-btn:hover { background: rgba(255,255,255,0.1); color: white; }
-#player-info { display: flex; align-items: center; gap: 8px; color: white; font-size: 12px; }
-#robux { color: #02b757; font-weight: bold; }
+#game-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.88); }
+#topbar-right {
+  margin-left: auto; display: flex; align-items: center; gap: 10px;
+  color: rgba(255,255,255,0.65); font-size: 12px;
+}
+#robux-pill {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(255,255,255,0.07);
+  padding: 3px 9px; border-radius: 12px;
+  color: #02b757; font-weight: 700; font-size: 12px;
+}
+#player-name { color: rgba(255,255,255,0.8); font-weight: 600; }
 
-/* CROSSHAIR */
+/* ===== CROSSHAIR ===== */
 #crosshair {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
   pointer-events: none; z-index: 50; display: none;
 }
 #crosshair::before, #crosshair::after {
-  content: ''; position: absolute; background: rgba(255,255,255,0.85);
+  content: ''; position: absolute;
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 0 3px rgba(0,0,0,0.8);
 }
-#crosshair::before { width: 2px; height: 18px; top: -9px; left: -1px; }
-#crosshair::after { width: 18px; height: 2px; top: -1px; left: -9px; }
+#crosshair::before { width: 2px; height: 20px; top: -10px; left: -1px; }
+#crosshair::after  { width: 20px; height: 2px; top: -1px; left: -10px; }
 
-/* HOTBAR */
+/* ===== CHAT (left side, Roblox CoreGui) ===== */
+#chat {
+  position: fixed; bottom: 72px; left: 10px;
+  width: 250px; z-index: 100; pointer-events: none;
+}
+.chat-msg {
+  background: rgba(0,0,0,0.58); color: white; font-size: 12px;
+  padding: 4px 10px 4px 8px; border-radius: 4px; margin-bottom: 3px;
+  border-left: 3px solid #e3393e;
+  animation: slideIn 0.2s ease; transition: opacity 0.6s;
+}
+@keyframes slideIn { from { opacity:0; transform:translateX(-8px); } to { opacity:1; } }
+
+/* ===== HEALTH HUD (bottom-left, Roblox CoreGui style) ===== */
+#health-hud {
+  position: fixed; bottom: 38px; left: 10px;
+  display: flex; align-items: center; gap: 6px; z-index: 100;
+  background: rgba(0,0,0,0.50); padding: 5px 10px 5px 8px; border-radius: 5px;
+}
+#health-icon { color: #e74c3c; font-size: 14px; line-height: 1; }
+#health-bar-bg {
+  width: 110px; height: 8px;
+  background: rgba(255,255,255,0.12); border-radius: 4px; overflow: hidden;
+}
+#health-bar {
+  height: 100%; width: 100%; background: #00a650;
+  border-radius: 4px; transition: width 0.3s, background 0.3s;
+}
+#health-text { color: white; font-size: 11px; font-weight: 600; min-width: 20px; }
+
+/* ===== HOTBAR (bottom-center, Roblox Backpack) ===== */
 #hotbar {
-  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-  display: flex; gap: 4px; z-index: 100;
-  background: rgba(0,0,0,0.65); padding: 6px;
-  border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);
+  position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 3px; z-index: 100;
+  background: rgba(0,0,0,0.70); padding: 4px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.07);
 }
 .hotbar-slot {
-  width: 54px; height: 54px;
-  border: 2px solid rgba(255,255,255,0.25); border-radius: 4px;
+  width: 52px; height: 52px; border-radius: 4px; position: relative;
+  border: 2px solid rgba(255,255,255,0.16);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  cursor: pointer; transition: border-color 0.12s, background 0.12s;
-  background: rgba(255,255,255,0.04); position: relative;
+  cursor: pointer; background: rgba(255,255,255,0.04); transition: border-color 0.1s;
 }
-.hotbar-slot:hover { border-color: rgba(255,255,255,0.55); }
-.hotbar-slot.active { border-color: #fff; background: rgba(255,255,255,0.14); box-shadow: 0 0 8px rgba(255,255,255,0.2); }
-.slot-color { width: 32px; height: 32px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.35); }
-.slot-num { position: absolute; top: 2px; left: 4px; font-size: 9px; color: rgba(255,255,255,0.55); }
-.slot-label { font-size: 7.5px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+.hotbar-slot.active { border-color: white; background: rgba(255,255,255,0.11); }
+.slot-color { width: 28px; height: 28px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.4); }
+.slot-num { position: absolute; top: 2px; left: 3px; font-size: 9px; color: rgba(255,255,255,0.5); font-weight: 700; }
+.slot-label { font-size: 7px; color: rgba(255,255,255,0.4); margin-top: 2px; }
 
-/* HEALTH */
-#health-container {
-  position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 6px; z-index: 100;
-}
-#health-icon { color: #e3393e; font-size: 14px; }
-#health-bar-bg {
-  width: 130px; height: 10px;
-  background: rgba(0,0,0,0.55); border-radius: 5px;
-  border: 1px solid rgba(255,255,255,0.18); overflow: hidden;
-}
-#health-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); border-radius: 5px; transition: width 0.3s, background 0.3s; }
-#health-text { color: white; font-size: 11px; min-width: 24px; }
-
-/* STATS */
-#stats {
-  position: fixed; top: 46px; left: 12px;
-  color: rgba(255,255,255,0.65); font-size: 11px; z-index: 100;
-  line-height: 1.7; font-family: monospace;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-}
-
-/* CONTROLS HINT */
-#controls-hint {
-  position: fixed; bottom: 82px; right: 14px;
-  color: rgba(255,255,255,0.45); font-size: 10px;
-  z-index: 100; line-height: 1.9; text-align: right;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-}
-
-/* CHAT */
-#chat { position: fixed; bottom: 82px; left: 14px; width: 280px; z-index: 100; }
-.chat-msg {
-  background: rgba(0,0,0,0.52); color: white; font-size: 11px;
-  padding: 3px 8px; border-radius: 3px; margin-bottom: 3px;
-  border-left: 2px solid #e3393e; animation: fadeIn 0.3s ease;
-}
-@keyframes fadeIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
-
-/* OVERLAY */
-#overlay {
-  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: rgba(10,10,20,0.88); z-index: 200; flex-direction: column; gap: 18px;
-}
-#overlay h1 { color: white; font-size: 52px; font-weight: 900; letter-spacing: -2px; }
-#overlay h1 span { color: #e3393e; }
-#overlay p { color: #aaa; font-size: 15px; }
-#play-btn {
-  background: #e3393e; color: white; border: none;
-  padding: 14px 48px; font-size: 18px; font-weight: bold;
-  border-radius: 8px; cursor: pointer; transition: background 0.2s, transform 0.1s;
-}
-#play-btn:hover { background: #c0392b; transform: scale(1.04); }
-#controls-summary {
-  font-size: 12px; color: #666; text-align: center; line-height: 1.8;
-  border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px; width: 340px;
-}
-
-/* scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
-
-/* LEADERBOARD */
+/* ===== LEADERBOARD (top-right, authentic Roblox) ===== */
 #leaderboard {
-  position: fixed; top: 46px; right: 14px;
-  background: rgba(0,0,0,0.60); border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 6px; padding: 8px 14px; z-index: 100; min-width: 150px;
-  font-size: 12px; color: white;
+  position: fixed; top: 44px; right: 10px;
+  background: rgba(0,0,0,0.72); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 6px; padding: 8px 14px; z-index: 100; min-width: 165px; color: white;
 }
 #lb-title {
-  font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.5);
-  letter-spacing: 1px; text-align: center; margin-bottom: 6px;
-  border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  color: rgba(255,255,255,0.35); text-align: center; text-transform: uppercase;
+  padding-bottom: 6px; margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
-.lb-row { display:flex; justify-content:space-between; gap:20px; margin:3px 0; }
-.lb-label { color: rgba(255,255,255,0.55); }
+.lb-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 12px; }
+.lb-label { color: rgba(255,255,255,0.5); }
 #lb-stage, #lb-deaths { font-weight: 700; color: #FFD700; }
 
-/* DEATH FLASH */
-#death-flash {
-  position: fixed; inset: 0; background: #ff2200;
-  opacity: 0; pointer-events: none; z-index: 300;
-  transition: opacity 0.4s ease;
+/* ===== STATS ===== */
+#stats {
+  position: fixed; top: 44px; left: 10px;
+  color: rgba(255,255,255,0.5); font-size: 10px;
+  z-index: 100; line-height: 1.8; font-family: monospace;
+  text-shadow: 1px 1px 3px rgba(0,0,0,1);
 }
 
-/* ---- TOUCH / MOBILE ---- */
-#game-canvas { touch-action: none; }
+/* ===== CONTROLS HINT ===== */
+#controls-hint {
+  position: fixed; bottom: 68px; right: 12px;
+  color: rgba(255,255,255,0.32); font-size: 10px;
+  z-index: 100; line-height: 2; text-align: right;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
 
-/* Virtual joystick */
+/* ===== DEATH FLASH ===== */
+#death-flash {
+  position: fixed; inset: 0; background: #cc1100;
+  opacity: 0; pointer-events: none; z-index: 300;
+  transition: opacity 0.35s ease;
+}
+
+/* ===== PLAY OVERLAY ===== */
+#overlay {
+  position: fixed; inset: 0; display: flex; align-items: center;
+  justify-content: center; flex-direction: column; gap: 16px;
+  background: rgba(8,8,14,0.93); z-index: 200;
+}
+#overlay-logo { display: flex; align-items: center; gap: 14px; }
+#rblx-badge {
+  width: 56px; height: 56px; background: #e3393e; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 34px; font-weight: 900; color: white;
+  font-family: Arial Black, sans-serif;
+}
+#overlay h1 { color: white; font-size: 40px; font-weight: 900; letter-spacing: -1px; }
+#overlay h1 span { color: #e3393e; }
+#overlay-sub { color: rgba(255,255,255,0.45); font-size: 13px; }
+#play-btn {
+  background: #00a650; color: white; border: none;
+  padding: 13px 54px; font-size: 17px; font-weight: 700;
+  border-radius: 6px; cursor: pointer; letter-spacing: 0.4px;
+  transition: background 0.15s, transform 0.1s;
+}
+#play-btn:hover { background: #009046; transform: scale(1.03); }
+#controls-summary {
+  font-size: 11px; color: rgba(255,255,255,0.35); text-align: center;
+  line-height: 2; padding-top: 14px; max-width: 400px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+/* ===== TOUCH / MOBILE ===== */
 #joystick-zone {
-  position: fixed; bottom: 100px; left: 24px;
-  width: 140px; height: 140px;
-  z-index: 150; display: none; touch-action: none;
+  position: fixed; bottom: 100px; left: 20px;
+  width: 140px; height: 140px; z-index: 150; display: none; touch-action: none;
 }
 #joystick-base {
   position: absolute; inset: 0; border-radius: 50%;
-  background: rgba(255,255,255,0.10);
-  border: 2px solid rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.10); border: 2px solid rgba(255,255,255,0.28);
 }
 #joystick-handle {
-  position: absolute;
-  width: 52px; height: 52px; border-radius: 50%;
-  background: rgba(255,255,255,0.45);
-  border: 2px solid rgba(255,255,255,0.75);
-  top: 44px; left: 44px;
-  pointer-events: none;
+  position: absolute; width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(255,255,255,0.45); border: 2px solid rgba(255,255,255,0.75);
+  top: 44px; left: 44px; pointer-events: none;
 }
-
-/* Touch action buttons (right side) */
 #touch-buttons {
   position: fixed; bottom: 100px; right: 20px;
-  display: none; flex-direction: column;
-  align-items: center; gap: 10px; z-index: 150;
+  display: none; flex-direction: column; align-items: center; gap: 10px; z-index: 150;
 }
 .touch-btn {
   width: 68px; height: 68px; border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.35);
   color: white; font-size: 11px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
-  touch-action: none; user-select: none;
-  text-align: center; line-height: 1.2;
+  touch-action: none; text-align: center; line-height: 1.2;
   -webkit-tap-highlight-color: transparent;
 }
-#btn-jump  { background: rgba(46,204,113,0.38); border-color: #2ecc71; font-size: 15px; width: 78px; height: 78px; }
-#btn-place { background: rgba(80,140,255,0.38); border-color: #6699ff; }
-#btn-remove{ background: rgba(220,50,50,0.38);  border-color: #e3393e; }
-#btn-sprint{ background: rgba(241,196,15,0.38); border-color: #f1c40f; }
+#btn-jump   { background: rgba(0,166,80,0.45);  border-color: #00a650; font-size: 14px; width: 76px; height: 76px; }
+#btn-place  { background: rgba(80,140,255,0.38); border-color: #6699ff; }
+#btn-remove { background: rgba(220,50,50,0.38);  border-color: #e3393e; }
+#btn-sprint { background: rgba(241,196,15,0.38); border-color: #f1c40f; }
+#btn-sprint.sprinting { background: rgba(241,196,15,0.72); }
 
-/* Sprint active state */
-#btn-sprint.sprinting { background: rgba(241,196,15,0.70); }
-
-/* Responsive hotbar — scale down on smaller screens */
 @media (max-width: 900px) {
   .hotbar-slot { width: 46px; height: 46px; }
-  .slot-color  { width: 26px; height: 26px; }
+  .slot-color  { width: 24px; height: 24px; }
   .slot-label  { display: none; }
-  #hotbar { gap: 3px; padding: 5px; }
   #controls-hint { display: none; }
   #chat { bottom: 100px; }
-  #health-container { bottom: 88px; }
+  #health-hud { bottom: 80px; }
 }
 @media (max-width: 600px) {
   .hotbar-slot { width: 38px; height: 38px; }
-  .slot-color  { width: 22px; height: 22px; }
+  .slot-color  { width: 20px; height: 20px; }
   .slot-num    { display: none; }
-  #topbar-center { display: none; }
-  #stats { font-size: 10px; }
+  #stats { display: none; }
 }
-
-/* Landscape-only warning for portrait mode */
 #portrait-warn {
   display: none; position: fixed; inset: 0; z-index: 500;
-  background: #1a1a2e; color: white;
+  background: #0d0d14; color: white;
   align-items: center; justify-content: center;
-  flex-direction: column; gap: 14px; font-size: 18px; text-align: center;
-  padding: 24px;
+  flex-direction: column; gap: 14px; font-size: 18px; text-align: center; padding: 24px;
 }
 @media (orientation: portrait) and (max-width: 1024px) {
   #portrait-warn { display: flex; }
 }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
 </style>
 </head>
 <body>
 
 <canvas id="game-canvas"></canvas>
 
-<!-- Portrait orientation warning -->
+<!-- Portrait warning -->
 <div id="portrait-warn">
   <div style="font-size:48px;">&#8635;</div>
   <strong>Rotate your device</strong>
-  <p style="font-size:14px; color:#aaa;">RobloxCopy is best played in landscape mode</p>
+  <p style="font-size:14px;color:#aaa;">RobloxCopy plays best in landscape</p>
 </div>
 
-<!-- Virtual joystick (mobile left thumb) -->
-<div id="joystick-zone">
-  <div id="joystick-base"></div>
-  <div id="joystick-handle"></div>
-</div>
+<!-- Virtual joystick -->
+<div id="joystick-zone"><div id="joystick-base"></div><div id="joystick-handle"></div></div>
 
-<!-- Touch action buttons (mobile right thumb) -->
+<!-- Touch buttons -->
 <div id="touch-buttons">
   <div class="touch-btn" id="btn-jump">&#8679;<br>JUMP</div>
   <div style="display:flex;gap:10px;">
     <div class="touch-btn" id="btn-place">&#9632;<br>PLACE</div>
-    <div class="touch-btn" id="btn-remove">&#10005;<br>REMOVE</div>
+    <div class="touch-btn" id="btn-remove">&#10005;<br>REM</div>
   </div>
   <div class="touch-btn" id="btn-sprint">&#9193;<br>SPRINT</div>
 </div>
 
+<!-- Play overlay -->
 <div id="overlay">
-  <h1>Roblox<span>Copy</span></h1>
-  <p>A Roblox-inspired obstacle course &amp; world builder</p>
+  <div id="overlay-logo">
+    <div id="rblx-badge">R</div>
+    <h1>Roblox<span>Copy</span></h1>
+  </div>
+  <p id="overlay-sub">Complete the obby — reach the GOLD finish platform!</p>
   <button id="play-btn" onclick="startGame()">Play</button>
   <div id="controls-summary">
     <span id="desktop-controls">
-      WASD — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Space — Jump &nbsp;|&nbsp; Shift — Sprint<br>
-      Reach the <strong style="color:#FFD700;">GOLD</strong> platform to win! &nbsp;|&nbsp; Touch <strong style="color:#FFD700;">YELLOW</strong> pads for checkpoints<br>
-      Avoid <strong style="color:#FF4400;">RED</strong> kill bricks &nbsp;|&nbsp; Left Click — Place part &nbsp;|&nbsp; Right Click — Remove
+      WASD / Arrow keys — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Space — Jump &nbsp;|&nbsp; Shift — Sprint<br>
+      Touch <strong style="color:#FFD700;">YELLOW</strong> checkpoints &nbsp;|&nbsp;
+      Avoid <strong style="color:#FF4400;">RED</strong> kill bricks &nbsp;|&nbsp;
+      Left click — Place part &nbsp;|&nbsp; Right click — Remove
     </span>
     <span id="mobile-controls" style="display:none;">
-      Left thumb — Move &nbsp;|&nbsp; Right drag — Look &nbsp;|&nbsp; JUMP to jump<br>
-      Reach the <strong style="color:#FFD700;">GOLD</strong> platform to win!<br>
-      Touch <strong style="color:#FFD700;">YELLOW</strong> checkpoints to save &nbsp;|&nbsp; Avoid <strong style="color:#FF4400;">RED</strong> kill bricks
+      Left thumb — Move &nbsp;|&nbsp; Right drag — Look<br>
+      Touch <strong style="color:#FFD700;">YELLOW</strong> checkpoints to save &nbsp;|&nbsp;
+      Avoid <strong style="color:#FF4400;">RED</strong> kill bricks
     </span>
   </div>
 </div>
 
+<!-- Roblox-authentic top bar -->
 <div id="topbar">
-  <div id="logo">Roblox<span>Copy</span></div>
-  <div id="topbar-center">
-    <div class="top-btn">Home</div>
-    <div class="top-btn">Games</div>
-    <div class="top-btn">Avatar</div>
-    <div class="top-btn">Inventory</div>
-    <div class="top-btn">Create</div>
-  </div>
-  <div id="player-info">
-    <span id="robux">♦ 0</span>
-    <span style="color:#ccc; font-weight:bold;">Player1</span>
+  <button id="menu-btn">R</button>
+  <span id="game-title">RobloxCopy — Obby</span>
+  <div id="topbar-right">
+    <span id="robux-pill">&#9670; 0</span>
+    <span id="player-name">Player1</span>
   </div>
 </div>
 
+<!-- Crosshair -->
 <div id="crosshair"></div>
 
+<!-- Debug stats -->
 <div id="stats">
   <div id="stat-pos">Pos: 0, 0, 0</div>
   <div id="stat-fps">FPS: --</div>
   <div id="stat-blocks">Parts placed: 0</div>
 </div>
 
-<div id="health-container">
+<!-- Health HUD (bottom-left, CoreGui style) -->
+<div id="health-hud">
   <span id="health-icon">&#9829;</span>
   <div id="health-bar-bg"><div id="health-bar"></div></div>
   <span id="health-text">100</span>
 </div>
 
+<!-- Hotbar (bottom-center) -->
 <div id="hotbar"></div>
 
+<!-- Controls hint (desktop) -->
 <div id="controls-hint">
   WASD — Move<br>
   Mouse — Look<br>
@@ -307,20 +317,21 @@ body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Arial, sa
   Shift — Sprint<br>
   LClick — Place<br>
   RClick — Remove<br>
-  1-9 — Block type<br>
+  1-9 — Part type<br>
   Esc — Unlock
 </div>
 
+<!-- Chat (left side) -->
 <div id="chat"></div>
 
-<!-- Leaderboard (top-right, Roblox style) -->
+<!-- Leaderboard (top-right) -->
 <div id="leaderboard">
-  <div id="lb-title">LEADERBOARD</div>
+  <div id="lb-title">Leaderboard</div>
   <div class="lb-row"><span class="lb-label">Stage</span><span id="lb-stage">0 / 3</span></div>
   <div class="lb-row"><span class="lb-label">Deaths</span><span id="lb-deaths">0</span></div>
 </div>
 
-<!-- Death flash overlay -->
+<!-- Death flash -->
 <div id="death-flash"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
@@ -367,7 +378,8 @@ let isLocked = false;
 let selectedSlot = 0;
 let health = 100;
 let placedBlocks = new Map();       // "cx,cy,cz" -> { mesh }
-let blockMeshes = [];               // for raycasting
+let blockMeshes = [];               // ALL meshes for raycasting (obby + user)
+let userBlockMeshes = [];           // ONLY user-placed blocks (for remove)
 let killMeshes  = [];               // kill brick meshes
 let checkpointMeshes = [];          // checkpoint meshes
 let ghostMesh, ghostMat;
@@ -449,11 +461,13 @@ function chatMsg(text, color = '#fff') {
 function updateHealth(val) {
   health = Math.max(0, Math.min(100, val));
   const bar = document.getElementById('health-bar');
+  if (!bar) return;
   document.getElementById('health-text').textContent = health;
   bar.style.width = health + '%';
-  if (health <= 25) bar.style.background = 'linear-gradient(90deg,#e74c3c,#c0392b)';
-  else if (health <= 55) bar.style.background = 'linear-gradient(90deg,#f39c12,#e67e22)';
-  else bar.style.background = 'linear-gradient(90deg,#2ecc71,#27ae60)';
+  // Roblox health colours: green → yellow → red
+  if (health <= 25) bar.style.background = '#e01800';
+  else if (health <= 55) bar.style.background = '#ff8c00';
+  else bar.style.background = '#00a650';
 }
 
 // ============================================================
@@ -463,8 +477,8 @@ function initScene() {
   clock = new THREE.Clock();
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87CEEB);
-  scene.fog = new THREE.FogExp2(0x87CEEB, 0.0035);
+  scene.background = new THREE.Color(0x6CB4E4); // Roblox sky blue
+  scene.fog = new THREE.FogExp2(0x6CB4E4, 0.003);
 
   renderer = new THREE.WebGLRenderer({
     canvas: document.getElementById('game-canvas'),
@@ -501,11 +515,28 @@ function initScene() {
   fill.position.set(-60, 40, -60);
   scene.add(fill);
 
+  buildSun();
   buildBaseplate();
   buildClouds();
   buildCharacter();
   buildGhostBlock();
   buildObby();
+}
+
+// ============================================================
+// SUN
+// ============================================================
+function buildSun() {
+  // Bright emissive sphere in the sky (Roblox-style)
+  const sunGeo = new THREE.SphereGeometry(18, 16, 16);
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xFFFBCC });
+  const sun = new THREE.Mesh(sunGeo, sunMat);
+  sun.position.set(200, 280, -300);
+  scene.add(sun);
+  // Soft glow ring
+  const glowGeo = new THREE.SphereGeometry(26, 16, 16);
+  const glowMat = new THREE.MeshBasicMaterial({ color: 0xFFE87A, transparent: true, opacity: 0.18 });
+  scene.add(new THREE.Mesh(glowGeo, glowMat)).position.copy(sun.position);
 }
 
 // ============================================================
@@ -1125,7 +1156,7 @@ function getRaycastTargets() {
 function updateGhostBlock() {
   raycaster.setFromCamera(screenCenter, camera);
   const hits = raycaster.intersectObjects(getRaycastTargets());
-  if (hits.length > 0 && hits[0].distance < 20) {
+  if (hits.length > 0 && hits[0].distance < 40) {
     const h = hits[0];
     const n = h.face.normal.clone();
     const off = h.point.clone().add(n.clone().multiplyScalar(2.1));
@@ -1150,7 +1181,7 @@ function doPlaceBlock() {
   const key = blockKey(cx, cy, cz);
   if (placedBlocks.has(key)) return;
 
-  const mat = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[selectedSlot].color });
+  const mat = new THREE.MeshPhongMaterial({ color: BLOCK_TYPES[selectedSlot].color, shininess: 80, specular: 0x222222 });
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(BS, BS, BS), mat);
   mesh.position.set(cx, cy, cz);
   mesh.castShadow = true;
@@ -1159,19 +1190,25 @@ function doPlaceBlock() {
   scene.add(mesh);
   placedBlocks.set(key, { mesh });
   blockMeshes.push(mesh);
+  userBlockMeshes.push(mesh);
   userBlockCount++;
-  document.getElementById('stat-blocks').textContent = `Blocks placed: ${userBlockCount}`;
+  document.getElementById('stat-blocks').textContent = `Parts placed: ${userBlockCount}`;
 }
 
 function doRemoveBlock(mesh) {
-  if (!mesh.userData.isBlock) return;
+  if (!mesh || !mesh.userData.isBlock) return;
   for (const [key, data] of placedBlocks.entries()) {
     if (data.mesh === mesh) {
       scene.remove(mesh);
       mesh.geometry.dispose();
       mesh.material.dispose();
       placedBlocks.delete(key);
-      blockMeshes.splice(blockMeshes.indexOf(mesh), 1);
+      const bi = blockMeshes.indexOf(mesh);
+      if (bi !== -1) blockMeshes.splice(bi, 1);
+      const ui = userBlockMeshes.indexOf(mesh);
+      if (ui !== -1) userBlockMeshes.splice(ui, 1);
+      userBlockCount--;
+      document.getElementById('stat-blocks').textContent = `Parts placed: ${userBlockCount}`;
       return;
     }
   }
@@ -1203,8 +1240,8 @@ document.addEventListener('mousedown', e => {
     doPlaceBlock();
   } else if (e.button === 2) {
     raycaster.setFromCamera(screenCenter, camera);
-    const hits = raycaster.intersectObjects(blockMeshes);
-    if (hits.length > 0 && hits[0].distance < 20) doRemoveBlock(hits[0].object);
+    const hits = raycaster.intersectObjects(userBlockMeshes);
+    if (hits.length > 0 && hits[0].distance < 40) doRemoveBlock(hits[0].object);
   }
 });
 
@@ -1313,8 +1350,8 @@ bindTouchBtn('btn-jump', () => { keys['Space'] = true; }, () => { keys['Space'] 
 bindTouchBtn('btn-place', () => { doPlaceBlock(); }, null);
 bindTouchBtn('btn-remove', () => {
   raycaster.setFromCamera(screenCenter, camera);
-  const hits = raycaster.intersectObjects(blockMeshes);
-  if (hits.length > 0 && hits[0].distance < 20) doRemoveBlock(hits[0].object);
+  const hits = raycaster.intersectObjects(userBlockMeshes);
+  if (hits.length > 0 && hits[0].distance < 40) doRemoveBlock(hits[0].object);
 }, null);
 bindTouchBtn('btn-sprint', () => {
   touchSprinting = !touchSprinting;
