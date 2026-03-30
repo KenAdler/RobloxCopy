@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RobloxCopy</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Arial, sans-serif; user-select: none; }
+#game-canvas { display: block; width: 100vw; height: 100vh; }
+
+/* TOP BAR */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 38px;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  border-bottom: 2px solid #e3393e;
+  display: flex; align-items: center; padding: 0 14px;
+  z-index: 100; gap: 10px;
+}
+#logo { color: white; font-size: 20px; font-weight: 900; letter-spacing: -1px; }
+#logo span { color: #e3393e; }
+#topbar-center { flex: 1; display: flex; justify-content: center; gap: 4px; }
+.top-btn {
+  color: #bbb; font-size: 12px; cursor: pointer;
+  padding: 4px 12px; border-radius: 4px; transition: background 0.2s, color 0.2s;
+}
+.top-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+#player-info { display: flex; align-items: center; gap: 8px; color: white; font-size: 12px; }
+#robux { color: #02b757; font-weight: bold; }
+
+/* CROSSHAIR */
+#crosshair {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  pointer-events: none; z-index: 50; display: none;
+}
+#crosshair::before, #crosshair::after {
+  content: ''; position: absolute; background: rgba(255,255,255,0.85);
+}
+#crosshair::before { width: 2px; height: 18px; top: -9px; left: -1px; }
+#crosshair::after { width: 18px; height: 2px; top: -1px; left: -9px; }
+
+/* HOTBAR */
+#hotbar {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 4px; z-index: 100;
+  background: rgba(0,0,0,0.65); padding: 6px;
+  border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);
+}
+.hotbar-slot {
+  width: 54px; height: 54px;
+  border: 2px solid rgba(255,255,255,0.25); border-radius: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; transition: border-color 0.12s, background 0.12s;
+  background: rgba(255,255,255,0.04); position: relative;
+}
+.hotbar-slot:hover { border-color: rgba(255,255,255,0.55); }
+.hotbar-slot.active { border-color: #fff; background: rgba(255,255,255,0.14); box-shadow: 0 0 8px rgba(255,255,255,0.2); }
+.slot-color { width: 32px; height: 32px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.35); }
+.slot-num { position: absolute; top: 2px; left: 4px; font-size: 9px; color: rgba(255,255,255,0.55); }
+.slot-label { font-size: 7.5px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+/* HEALTH */
+#health-container {
+  position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 6px; z-index: 100;
+}
+#health-icon { color: #e3393e; font-size: 14px; }
+#health-bar-bg {
+  width: 130px; height: 10px;
+  background: rgba(0,0,0,0.55); border-radius: 5px;
+  border: 1px solid rgba(255,255,255,0.18); overflow: hidden;
+}
+#health-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); border-radius: 5px; transition: width 0.3s, background 0.3s; }
+#health-text { color: white; font-size: 11px; min-width: 24px; }
+
+/* STATS */
+#stats {
+  position: fixed; top: 46px; left: 12px;
+  color: rgba(255,255,255,0.65); font-size: 11px; z-index: 100;
+  line-height: 1.7; font-family: monospace;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+/* CONTROLS HINT */
+#controls-hint {
+  position: fixed; bottom: 82px; right: 14px;
+  color: rgba(255,255,255,0.45); font-size: 10px;
+  z-index: 100; line-height: 1.9; text-align: right;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+/* CHAT */
+#chat { position: fixed; bottom: 82px; left: 14px; width: 280px; z-index: 100; }
+.chat-msg {
+  background: rgba(0,0,0,0.52); color: white; font-size: 11px;
+  padding: 3px 8px; border-radius: 3px; margin-bottom: 3px;
+  border-left: 2px solid #e3393e; animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+
+/* OVERLAY */
+#overlay {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(10,10,20,0.88); z-index: 200; flex-direction: column; gap: 18px;
+}
+#overlay h1 { color: white; font-size: 52px; font-weight: 900; letter-spacing: -2px; }
+#overlay h1 span { color: #e3393e; }
+#overlay p { color: #aaa; font-size: 15px; }
+#play-btn {
+  background: #e3393e; color: white; border: none;
+  padding: 14px 48px; font-size: 18px; font-weight: bold;
+  border-radius: 8px; cursor: pointer; transition: background 0.2s, transform 0.1s;
+}
+#play-btn:hover { background: #c0392b; transform: scale(1.04); }
+#controls-summary {
+  font-size: 12px; color: #666; text-align: center; line-height: 1.8;
+  border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px; width: 340px;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<canvas id="game-canvas"></canvas>
+
+<div id="overlay">
+  <h1>Roblox<span>Copy</span></h1>
+  <p>A Roblox-inspired 3D world builder</p>
+  <button id="play-btn" onclick="startGame()">Play</button>
+  <div id="controls-summary">
+    WASD — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Space — Jump &nbsp;|&nbsp; Shift — Sprint<br>
+    Left Click — Place block &nbsp;|&nbsp; Right Click — Remove block<br>
+    1-9 — Select block type &nbsp;|&nbsp; Esc — Unlock mouse
+  </div>
+</div>
+
+<div id="topbar">
+  <div id="logo">Roblox<span>Copy</span></div>
+  <div id="topbar-center">
+    <div class="top-btn">Home</div>
+    <div class="top-btn">Games</div>
+    <div class="top-btn">Avatar</div>
+    <div class="top-btn">Inventory</div>
+    <div class="top-btn">Create</div>
+  </div>
+  <div id="player-info">
+    <span id="robux">♦ 0</span>
+    <span style="color:#ccc; font-weight:bold;">Player1</span>
+  </div>
+</div>
+
+<div id="crosshair"></div>
+
+<div id="stats">
+  <div id="stat-pos">Pos: 0, 0, 0</div>
+  <div id="stat-fps">FPS: --</div>
+  <div id="stat-blocks">Blocks placed: 0</div>
+</div>
+
+<div id="health-container">
+  <span id="health-icon">&#9829;</span>
+  <div id="health-bar-bg"><div id="health-bar"></div></div>
+  <span id="health-text">100</span>
+</div>
+
+<div id="hotbar"></div>
+
+<div id="controls-hint">
+  WASD — Move<br>
+  Mouse — Look<br>
+  Space — Jump<br>
+  Shift — Sprint<br>
+  LClick — Place<br>
+  RClick — Remove<br>
+  1-9 — Block type<br>
+  Esc — Unlock
+</div>
+
+<div id="chat"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+<script>
+'use strict';
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+const BS   = 4;       // block size (studs)
+const HS   = BS / 2;  // half block size
+const PW   = 1.6;     // player width
+const PH   = 5.0;     // player height (feet to top)
+const GRAV = -30;
+const JUMP = 15;
+const WALK = 14;
+const SPRINT = 26;
+
+// Block types (Roblox palette)
+const BLOCK_TYPES = [
+  { name: 'Brick',     hex: '#C4281C', color: 0xC4281C },
+  { name: 'Grass',     hex: '#4DA44B', color: 0x4DA44B },
+  { name: 'Sand',      hex: '#E8D24D', color: 0xE8D24D },
+  { name: 'Wood',      hex: '#9B7743', color: 0x9B7743 },
+  { name: 'Stone',     hex: '#959595', color: 0x959595 },
+  { name: 'Ice',       hex: '#C0E8F2', color: 0xC0E8F2 },
+  { name: 'Lava',      hex: '#FF6600', color: 0xFF6600 },
+  { name: 'Sky Blue',  hex: '#8ABFDF', color: 0x8ABFDF },
+  { name: 'Neon',      hex: '#FF44AA', color: 0xFF44AA },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let scene, camera, renderer;
+let clock;
+let player;                         // THREE.Group
+let charParts = {};                 // named limb groups
+let vel = new THREE.Vector3();      // player velocity
+let isOnGround = false;
+let yaw = 0, pitch = 0;
+let keys = {};
+let isLocked = false;
+let selectedSlot = 0;
+let health = 100;
+let placedBlocks = new Map();       // "cx,cy,cz" -> { mesh }
+let blockMeshes = [];               // for raycasting
+let ghostMesh, ghostMat;
+let walkTimer = 0;
+let userBlockCount = 0;
+
+// FPS tracking
+let fpsFrames = 0, fpsLast = 0, fpsVal = 0;
+
+// Raycast reuse
+const raycaster = new THREE.Raycaster();
+const screenCenter = new THREE.Vector2(0, 0);
+
+// Baseplate reference mesh (for raycasting)
+let baseMesh;
+
+// ============================================================
+// UI
+// ============================================================
+function buildHotbar() {
+  const el = document.getElementById('hotbar');
+  el.innerHTML = '';
+  BLOCK_TYPES.forEach((bt, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'hotbar-slot' + (i === selectedSlot ? ' active' : '');
+    slot.innerHTML =
+      `<span class="slot-num">${i + 1}</span>` +
+      `<div class="slot-color" style="background:${bt.hex}"></div>` +
+      `<span class="slot-label">${bt.name}</span>`;
+    slot.addEventListener('click', () => selectSlot(i));
+    el.appendChild(slot);
+  });
+}
+
+function selectSlot(i) {
+  selectedSlot = i;
+  document.querySelectorAll('.hotbar-slot').forEach((s, idx) => {
+    s.classList.toggle('active', idx === i);
+  });
+  if (ghostMat) ghostMat.color.set(BLOCK_TYPES[i].color);
+}
+
+function chatMsg(text, color = '#fff') {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.style.color = color;
+  div.textContent = text;
+  chat.appendChild(div);
+  setTimeout(() => div.style.opacity = '0', 6000);
+  setTimeout(() => div.remove(), 6600);
+}
+
+function updateHealth(val) {
+  health = Math.max(0, Math.min(100, val));
+  const bar = document.getElementById('health-bar');
+  document.getElementById('health-text').textContent = health;
+  bar.style.width = health + '%';
+  if (health <= 25) bar.style.background = 'linear-gradient(90deg,#e74c3c,#c0392b)';
+  else if (health <= 55) bar.style.background = 'linear-gradient(90deg,#f39c12,#e67e22)';
+  else bar.style.background = 'linear-gradient(90deg,#2ecc71,#27ae60)';
+}
+
+// ============================================================
+// SCENE INIT
+// ============================================================
+function initScene() {
+  clock = new THREE.Clock();
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x87CEEB);
+  scene.fog = new THREE.FogExp2(0x87CEEB, 0.0035);
+
+  renderer = new THREE.WebGLRenderer({
+    canvas: document.getElementById('game-canvas'),
+    antialias: true,
+  });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.1, 800);
+
+  // Lighting
+  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(ambient);
+
+  const sun = new THREE.DirectionalLight(0xfffbe0, 1.1);
+  sun.position.set(80, 160, 60);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 1;
+  sun.shadow.camera.far = 600;
+  sun.shadow.camera.left = -160;
+  sun.shadow.camera.right = 160;
+  sun.shadow.camera.top = 160;
+  sun.shadow.camera.bottom = -160;
+  sun.shadow.bias = -0.0003;
+  scene.add(sun);
+
+  const hemi = new THREE.HemisphereLight(0x87CEEB, 0x4DA44B, 0.4);
+  scene.add(hemi);
+
+  const fill = new THREE.DirectionalLight(0xb0d0ff, 0.3);
+  fill.position.set(-60, 40, -60);
+  scene.add(fill);
+
+  buildBaseplate();
+  buildClouds();
+  buildCharacter();
+  buildGhostBlock();
+  buildStarterWorld();
+}
+
+// ============================================================
+// BASEPLATE
+// ============================================================
+function buildBaseplate() {
+  // Main green slab
+  const geo = new THREE.BoxGeometry(512, 4, 512);
+  const mat = new THREE.MeshLambertMaterial({ color: 0x4DA44B });
+  baseMesh = new THREE.Mesh(geo, mat);
+  baseMesh.position.y = -2; // top surface at y=0
+  baseMesh.receiveShadow = true;
+  baseMesh.userData.isBase = true;
+  scene.add(baseMesh);
+
+  // Grid overlay
+  const grid = new THREE.GridHelper(512, 128, 0x3a8a38, 0x3a8a38);
+  grid.material.opacity = 0.25;
+  grid.material.transparent = true;
+  grid.position.y = 0.02;
+  scene.add(grid);
+}
+
+// ============================================================
+// CLOUDS
+// ============================================================
+function buildClouds() {
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.88 });
+  for (let i = 0; i < 28; i++) {
+    const g = new THREE.Group();
+    const parts = 3 + Math.floor(Math.random() * 4);
+    for (let j = 0; j < parts; j++) {
+      const w = 9 + Math.random() * 14;
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, 4, w * 0.65), cloudMat);
+      mesh.position.set((Math.random() - 0.5) * 22, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 14);
+      g.add(mesh);
+    }
+    g.position.set(
+      (Math.random() - 0.5) * 420,
+      65 + Math.random() * 55,
+      (Math.random() - 0.5) * 420
+    );
+    scene.add(g);
+  }
+}
+
+// ============================================================
+// CHARACTER (R6-style Roblox)
+// ============================================================
+function buildCharacter() {
+  player = new THREE.Group();
+
+  function part(w, h, d, color) {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.MeshLambertMaterial({ color })
+    );
+    m.castShadow = true;
+    return m;
+  }
+
+  // Torso
+  const torso = part(2, 2.5, 1, 0x055E9A);
+  torso.position.y = 1.25 + 2.3; // center at ~3.55
+  player.add(torso);
+  charParts.torso = torso;
+
+  // Head
+  const head = part(1.6, 1.6, 1.6, 0xFFCC99);
+  head.position.y = PH - 0.6;
+  player.add(head);
+  charParts.head = head;
+
+  // Eyes
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+  const eyeGeo = new THREE.BoxGeometry(0.28, 0.28, 0.05);
+  [-0.32, 0.32].forEach(xOff => {
+    const eye = new THREE.Mesh(eyeGeo, eyeMat);
+    eye.position.set(xOff, PH - 0.55, 0.83);
+    player.add(eye);
+  });
+  // Smile
+  const smile = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.12, 0.05), eyeMat);
+  smile.position.set(0, PH - 0.88, 0.83);
+  player.add(smile);
+
+  // Left arm group (pivot at shoulder)
+  const armL = new THREE.Group();
+  armL.position.set(-1.5, 3.55, 0);
+  const armLMesh = part(0.85, 2.3, 0.85, 0x055E9A);
+  armLMesh.position.y = -1.15;
+  armL.add(armLMesh);
+  player.add(armL);
+  charParts.armL = armL;
+
+  // Right arm group
+  const armR = new THREE.Group();
+  armR.position.set(1.5, 3.55, 0);
+  const armRMesh = part(0.85, 2.3, 0.85, 0x055E9A);
+  armRMesh.position.y = -1.15;
+  armR.add(armRMesh);
+  player.add(armR);
+  charParts.armR = armR;
+
+  // Left leg group (pivot at hip)
+  const legL = new THREE.Group();
+  legL.position.set(-0.55, 2.3, 0);
+  const legLMesh = part(0.9, 2.3, 0.9, 0x254B7A);
+  legLMesh.position.y = -1.15;
+  legL.add(legLMesh);
+  const shoeL = part(0.92, 0.42, 1.05, 0x111111);
+  shoeL.position.set(0, -2.4, 0.1);
+  legL.add(shoeL);
+  player.add(legL);
+  charParts.legL = legL;
+
+  // Right leg group
+  const legR = new THREE.Group();
+  legR.position.set(0.55, 2.3, 0);
+  const legRMesh = part(0.9, 2.3, 0.9, 0x254B7A);
+  legRMesh.position.y = -1.15;
+  legR.add(legRMesh);
+  const shoeR = part(0.92, 0.42, 1.05, 0x111111);
+  shoeR.position.set(0, -2.4, 0.1);
+  legR.add(shoeR);
+  player.add(legR);
+  charParts.legR = legR;
+
+  player.position.set(0, 6, 0);
+  scene.add(player);
+}
+
+// ============================================================
+// GHOST BLOCK (preview)
+// ============================================================
+function buildGhostBlock() {
+  ghostMat = new THREE.MeshLambertMaterial({
+    color: BLOCK_TYPES[0].color,
+    transparent: true,
+    opacity: 0.45,
+  });
+  ghostMesh = new THREE.Mesh(new THREE.BoxGeometry(BS, BS, BS), ghostMat);
+  ghostMesh.visible = false;
+  scene.add(ghostMesh);
+
+  // Wireframe outline for ghost
+  const wf = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(BS, BS, BS)),
+    new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
+  );
+  ghostMesh.add(wf);
+}
+
+// ============================================================
+// STARTER WORLD
+// ============================================================
+function placeBlock(cx, cy, cz, typeIdx) {
+  const key = `${cx},${cy},${cz}`;
+  if (placedBlocks.has(key)) return;
+  const mat = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[typeIdx].color });
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(BS, BS, BS), mat);
+  mesh.position.set(cx, cy, cz);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData.isBlock = true;
+  scene.add(mesh);
+  placedBlocks.set(key, { mesh });
+  blockMeshes.push(mesh);
+}
+
+function blockCenter(ix, iy, iz) {
+  // World center from grid indices. Y: bottom of layer iy is at iy*BS, center is iy*BS + HS
+  return { cx: ix * BS, cy: iy * BS + HS, cz: iz * BS };
+}
+
+function buildStarterWorld() {
+  // Spawn area: colorful checkerboard ring
+  const ringColors = [1, 4, 0, 2];
+  for (let ix = -6; ix <= 6; ix++) {
+    for (let iz = -6; iz <= 6; iz++) {
+      const d = Math.abs(ix) + Math.abs(iz);
+      if (d >= 5 && d <= 8) {
+        const { cx, cy, cz } = blockCenter(ix, 0, iz);
+        placeBlock(cx, cy, cz, ringColors[(ix + iz + 8) % 4]);
+      }
+    }
+  }
+
+  // Staircase going north
+  for (let step = 0; step < 8; step++) {
+    for (let w = -2; w <= 2; w++) {
+      for (let h = 0; h <= step; h++) {
+        const { cx, cy, cz } = blockCenter(w, h, -(8 + step));
+        placeBlock(cx, cy, cz, 4); // stone
+      }
+    }
+  }
+
+  // Platform at top of stairs with a brick border
+  for (let ix = -4; ix <= 4; ix++) {
+    for (let iz = -18; iz >= -26; iz--) {
+      const onEdge = ix === -4 || ix === 4 || iz === -18 || iz === -26;
+      const { cx, cy, cz } = blockCenter(ix, 8, iz);
+      placeBlock(cx, cy, cz, onEdge ? 0 : 7); // brick border, sky-blue center
+    }
+  }
+
+  // Pillars on the platform corners
+  [[- 4, -18], [4, -18], [-4, -26], [4, -26]].forEach(([ix, iz]) => {
+    for (let iy = 9; iy <= 13; iy++) {
+      const { cx, cy, cz } = blockCenter(ix, iy, iz);
+      placeBlock(cx, cy, cz, 0); // brick
+    }
+  });
+
+  // Scattered terrain blocks
+  const rng = mulberry32(42);
+  const terrainColors = [1, 2, 3, 4, 6, 8];
+  for (let i = 0; i < 40; i++) {
+    const ix = Math.floor((rng() - 0.5) * 40);
+    const iz = Math.floor((rng() - 0.5) * 40);
+    if (Math.abs(ix) < 8 && Math.abs(iz) < 8) continue;
+    const h = 1 + Math.floor(rng() * 4);
+    const ci = terrainColors[Math.floor(rng() * terrainColors.length)];
+    for (let iy = 0; iy < h; iy++) {
+      const { cx, cy, cz } = blockCenter(ix, iy, iz);
+      placeBlock(cx, cy, cz, ci);
+    }
+  }
+
+  // Lava pool (cosmetic, no damage yet)
+  for (let ix = 12; ix <= 16; ix++) {
+    for (let iz = 12; iz <= 16; iz++) {
+      const { cx, cy, cz } = blockCenter(ix, 0, iz);
+      placeBlock(cx, cy, cz, 6);
+    }
+  }
+
+  chatMsg('Welcome to RobloxCopy!', '#FFD700');
+  setTimeout(() => chatMsg('Left click to place · Right click to remove · 1-9 select block', '#aaa'), 1200);
+}
+
+// Simple deterministic RNG (Mulberry32)
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ============================================================
+// SNAP / GRID HELPERS
+// ============================================================
+// Block centers in X/Z: 0, ±BS, ±2*BS, ...  → snap = round(v/BS)*BS
+// Block centers in Y: HS, HS+BS, HS+2*BS, ... → snap = floor(v/BS)*BS + HS
+
+function snapX(v) { return Math.round(v / BS) * BS; }
+function snapZ(v) { return Math.round(v / BS) * BS; }
+function snapY(v) { return Math.floor(v / BS) * BS + HS; }
+
+function blockKey(cx, cy, cz) { return `${cx},${cy},${cz}`; }
+
+// ============================================================
+// PLAYER BLOCK COLLISION
+// ============================================================
+// Player AABB: x ∈ [px-PW/2, px+PW/2], y ∈ [py, py+PH], z ∈ [pz-PW/2, pz+PW/2]
+// Block AABB:  x ∈ [cx-HS, cx+HS], y ∈ [cy-HS, cy+HS], z ∈ [cz-HS, cz+HS]
+
+function playerAABB(pos) {
+  const hw = PW / 2;
+  return {
+    minX: pos.x - hw, maxX: pos.x + hw,
+    minY: pos.y,      maxY: pos.y + PH,
+    minZ: pos.z - hw, maxZ: pos.z + hw,
+  };
+}
+
+function blockAABB(cx, cy, cz) {
+  return {
+    minX: cx - HS, maxX: cx + HS,
+    minY: cy - HS, maxY: cy + HS,
+    minZ: cz - HS, maxZ: cz + HS,
+  };
+}
+
+function overlaps(a, b) {
+  return a.minX < b.maxX && a.maxX > b.minX &&
+         a.minY < b.maxY && a.maxY > b.minY &&
+         a.minZ < b.maxZ && a.maxZ > b.minZ;
+}
+
+// Get block centers near player position
+function nearbyBlocks(pos) {
+  const result = [];
+  const hw = PW / 2;
+  // Determine grid range to check
+  const x0 = Math.round((pos.x - hw - HS) / BS), x1 = Math.round((pos.x + hw + HS) / BS);
+  const z0 = Math.round((pos.z - hw - HS) / BS), z1 = Math.round((pos.z + hw + HS) / BS);
+  const y0 = Math.floor((pos.y - BS) / BS), y1 = Math.floor((pos.y + PH + BS) / BS);
+  for (let iy = y0; iy <= y1; iy++) {
+    for (let ix = x0; ix <= x1; ix++) {
+      for (let iz = z0; iz <= z1; iz++) {
+        const cx = ix * BS, cy = iy * BS + HS, cz = iz * BS;
+        const key = blockKey(cx, cy, cz);
+        if (placedBlocks.has(key)) {
+          result.push({ cx, cy, cz });
+        }
+      }
+    }
+  }
+  return result;
+}
+
+// ============================================================
+// PHYSICS UPDATE
+// ============================================================
+function updatePlayer(dt) {
+  const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'];
+  const speed = isSprinting ? SPRINT : WALK;
+
+  // Movement direction relative to camera yaw
+  const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+  const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+  const dir = new THREE.Vector3();
+  if (keys['KeyW'] || keys['ArrowUp'])    dir.add(fwd);
+  if (keys['KeyS'] || keys['ArrowDown'])  dir.sub(fwd);
+  if (keys['KeyA'] || keys['ArrowLeft'])  dir.sub(right);
+  if (keys['KeyD'] || keys['ArrowRight']) dir.add(right);
+  const isMoving = dir.lengthSq() > 0;
+  if (isMoving) dir.normalize();
+
+  // Smooth horizontal velocity
+  const tVX = dir.x * speed, tVZ = dir.z * speed;
+  const t = Math.min(1, dt * 16);
+  vel.x += (tVX - vel.x) * t;
+  vel.z += (tVZ - vel.z) * t;
+
+  // Gravity
+  vel.y += GRAV * dt;
+
+  // Jump
+  if (keys['Space'] && isOnGround) {
+    vel.y = JUMP;
+    isOnGround = false;
+    keys['Space'] = false; // consume
+  }
+
+  // --- Axis-separated movement + collision ---
+  const pos = player.position;
+
+  // ---- Move Y ----
+  pos.y += vel.y * dt;
+  isOnGround = false;
+
+  // Baseplate collision (top at y=0)
+  if (pos.y < 0) {
+    pos.y = 0;
+    if (vel.y < 0) { vel.y = 0; isOnGround = true; }
+  }
+
+  // Block collision Y
+  const near = nearbyBlocks(pos);
+  for (const b of near) {
+    const pa = playerAABB(pos);
+    const ba = blockAABB(b.cx, b.cy, b.cz);
+    if (!overlaps(pa, ba)) continue;
+    if (vel.y <= 0) {
+      // falling: land on top
+      if (pa.minY < ba.maxY && pa.maxY > ba.maxY) {
+        pos.y = ba.maxY;
+        vel.y = 0;
+        isOnGround = true;
+      }
+    } else {
+      // rising: hit bottom
+      if (pa.maxY > ba.minY && pa.minY < ba.minY) {
+        pos.y = ba.minY - PH;
+        vel.y = 0;
+      }
+    }
+  }
+
+  // ---- Move X ----
+  pos.x += vel.x * dt;
+  for (const b of nearbyBlocks(pos)) {
+    const pa = playerAABB(pos);
+    const ba = blockAABB(b.cx, b.cy, b.cz);
+    if (!overlaps(pa, ba)) continue;
+    if (vel.x > 0) { pos.x = ba.minX - PW / 2; vel.x = 0; }
+    else            { pos.x = ba.maxX + PW / 2; vel.x = 0; }
+  }
+
+  // ---- Move Z ----
+  pos.z += vel.z * dt;
+  for (const b of nearbyBlocks(pos)) {
+    const pa = playerAABB(pos);
+    const ba = blockAABB(b.cx, b.cy, b.cz);
+    if (!overlaps(pa, ba)) continue;
+    if (vel.z > 0) { pos.z = ba.minZ - PW / 2; vel.z = 0; }
+    else            { pos.z = ba.maxZ + PW / 2; vel.z = 0; }
+  }
+
+  // Fall off world
+  if (pos.y < -60) {
+    pos.set(0, 8, 0);
+    vel.set(0, 0, 0);
+    updateHealth(health - 20);
+    chatMsg('You fell off the world!', '#ff4d4d');
+  }
+
+  // Rotate player body to face movement direction
+  if (isMoving) {
+    const targetYaw = Math.atan2(dir.x, dir.z);
+    let diff = targetYaw - player.rotation.y;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    player.rotation.y += diff * Math.min(1, dt * 14);
+  }
+
+  // Walk animation
+  walkTimer += dt * (isMoving ? (isSprinting ? 14 : 8) : 0);
+  const swing = isMoving ? Math.sin(walkTimer) * 0.55 : 0;
+  if (charParts.legL) charParts.legL.rotation.x = swing;
+  if (charParts.legR) charParts.legR.rotation.x = -swing;
+  if (charParts.armL) charParts.armL.rotation.x = -swing * 0.45;
+  if (charParts.armR) charParts.armR.rotation.x = swing * 0.45;
+  if (charParts.torso && isMoving) {
+    charParts.torso.position.y = 3.55 + Math.abs(Math.sin(walkTimer)) * 0.08;
+  }
+
+  // Update stats
+  document.getElementById('stat-pos').textContent =
+    `Pos: ${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)}`;
+}
+
+// ============================================================
+// CAMERA
+// ============================================================
+const camTarget = new THREE.Vector3();
+function updateCamera() {
+  const dist = 16, camUp = 8;
+  const tx = player.position.x - Math.sin(yaw) * dist * Math.cos(pitch);
+  const ty = player.position.y + camUp + Math.sin(pitch) * dist;
+  const tz = player.position.z - Math.cos(yaw) * dist * Math.cos(pitch);
+  camTarget.set(tx, ty, tz);
+  camera.position.lerp(camTarget, 0.14);
+  camera.lookAt(player.position.x, player.position.y + 3, player.position.z);
+}
+
+// ============================================================
+// BLOCK PLACEMENT
+// ============================================================
+function getRaycastTargets() {
+  return [baseMesh, ...blockMeshes];
+}
+
+function updateGhostBlock() {
+  raycaster.setFromCamera(screenCenter, camera);
+  const hits = raycaster.intersectObjects(getRaycastTargets());
+  if (hits.length > 0 && hits[0].distance < 20) {
+    const h = hits[0];
+    const n = h.face.normal.clone();
+    const off = h.point.clone().add(n.clone().multiplyScalar(2.1));
+    const cx = snapX(off.x), cy = snapY(off.y), cz = snapZ(off.z);
+    ghostMesh.position.set(cx, cy, cz);
+    ghostMesh.visible = true;
+    return { hit: h, cx, cy, cz };
+  }
+  ghostMesh.visible = false;
+  return null;
+}
+
+function doPlaceBlock() {
+  const info = updateGhostBlock();
+  if (!info) return;
+  const { cx, cy, cz } = info;
+  // Don't place inside player
+  const pa = playerAABB(player.position);
+  const ba = blockAABB(cx, cy, cz);
+  if (overlaps(pa, ba)) return;
+
+  const key = blockKey(cx, cy, cz);
+  if (placedBlocks.has(key)) return;
+
+  const mat = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[selectedSlot].color });
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(BS, BS, BS), mat);
+  mesh.position.set(cx, cy, cz);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData.isBlock = true;
+  scene.add(mesh);
+  placedBlocks.set(key, { mesh });
+  blockMeshes.push(mesh);
+  userBlockCount++;
+  document.getElementById('stat-blocks').textContent = `Blocks placed: ${userBlockCount}`;
+}
+
+function doRemoveBlock(mesh) {
+  if (!mesh.userData.isBlock) return;
+  for (const [key, data] of placedBlocks.entries()) {
+    if (data.mesh === mesh) {
+      scene.remove(mesh);
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+      placedBlocks.delete(key);
+      blockMeshes.splice(blockMeshes.indexOf(mesh), 1);
+      return;
+    }
+  }
+}
+
+// ============================================================
+// INPUT
+// ============================================================
+document.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code.startsWith('Digit')) {
+    const n = parseInt(e.code.slice(5), 10) - 1;
+    if (n >= 0 && n < BLOCK_TYPES.length) selectSlot(n);
+  }
+  if (e.code === 'Escape' && isLocked) {
+    document.exitPointerLock();
+  }
+});
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+document.addEventListener('mousemove', e => {
+  if (!isLocked) return;
+  yaw   -= e.movementX * 0.0024;
+  pitch -= e.movementY * 0.0024;
+  pitch  = Math.max(-Math.PI * 0.45, Math.min(Math.PI * 0.45, pitch));
+});
+
+document.addEventListener('mousedown', e => {
+  if (!isLocked) return;
+  if (e.button === 0) {
+    doPlaceBlock();
+  } else if (e.button === 2) {
+    raycaster.setFromCamera(screenCenter, camera);
+    const hits = raycaster.intersectObjects(blockMeshes);
+    if (hits.length > 0 && hits[0].distance < 20) {
+      doRemoveBlock(hits[0].object);
+    }
+  }
+});
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+document.getElementById('game-canvas').addEventListener('click', () => {
+  if (!isLocked) document.getElementById('game-canvas').requestPointerLock();
+});
+
+document.addEventListener('pointerlockchange', () => {
+  isLocked = document.pointerLockElement === document.getElementById('game-canvas');
+  document.getElementById('crosshair').style.display = isLocked ? 'block' : 'none';
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+let prevTime = 0;
+
+function gameLoop(timestamp) {
+  requestAnimationFrame(gameLoop);
+  const dt = Math.min((timestamp - prevTime) / 1000, 0.05);
+  prevTime = timestamp;
+
+  // FPS
+  fpsFrames++;
+  if (timestamp - fpsLast >= 500) {
+    fpsVal = Math.round(fpsFrames / ((timestamp - fpsLast) / 1000));
+    fpsFrames = 0;
+    fpsLast = timestamp;
+    document.getElementById('stat-fps').textContent = `FPS: ${fpsVal}`;
+  }
+
+  if (isLocked) {
+    updatePlayer(dt);
+    updateCamera();
+    updateGhostBlock();
+  }
+
+  renderer.render(scene, camera);
+}
+
+// ============================================================
+// START
+// ============================================================
+function startGame() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('game-canvas').requestPointerLock();
+  requestAnimationFrame(ts => { prevTime = ts; gameLoop(ts); });
+}
+
+buildHotbar();
+initScene();
+</script>
+</body>
+</html>
