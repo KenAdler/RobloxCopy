@@ -124,6 +124,29 @@ body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Arial, sa
 ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
 
+/* LEADERBOARD */
+#leaderboard {
+  position: fixed; top: 46px; right: 14px;
+  background: rgba(0,0,0,0.60); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px; padding: 8px 14px; z-index: 100; min-width: 150px;
+  font-size: 12px; color: white;
+}
+#lb-title {
+  font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.5);
+  letter-spacing: 1px; text-align: center; margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;
+}
+.lb-row { display:flex; justify-content:space-between; gap:20px; margin:3px 0; }
+.lb-label { color: rgba(255,255,255,0.55); }
+#lb-stage, #lb-deaths { font-weight: 700; color: #FFD700; }
+
+/* DEATH FLASH */
+#death-flash {
+  position: fixed; inset: 0; background: #ff2200;
+  opacity: 0; pointer-events: none; z-index: 300;
+  transition: opacity 0.4s ease;
+}
+
 /* ---- TOUCH / MOBILE ---- */
 #game-canvas { touch-action: none; }
 
@@ -230,19 +253,18 @@ body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Arial, sa
 
 <div id="overlay">
   <h1>Roblox<span>Copy</span></h1>
-  <p>A Roblox-inspired 3D world builder</p>
+  <p>A Roblox-inspired obstacle course &amp; world builder</p>
   <button id="play-btn" onclick="startGame()">Play</button>
   <div id="controls-summary">
     <span id="desktop-controls">
       WASD — Move &nbsp;|&nbsp; Mouse — Look &nbsp;|&nbsp; Space — Jump &nbsp;|&nbsp; Shift — Sprint<br>
-      Left Click — Place block &nbsp;|&nbsp; Right Click — Remove<br>
-      1-9 — Select block type &nbsp;|&nbsp; Esc — Unlock mouse
+      Reach the <strong style="color:#FFD700;">GOLD</strong> platform to win! &nbsp;|&nbsp; Touch <strong style="color:#FFD700;">YELLOW</strong> pads for checkpoints<br>
+      Avoid <strong style="color:#FF4400;">RED</strong> kill bricks &nbsp;|&nbsp; Left Click — Place part &nbsp;|&nbsp; Right Click — Remove
     </span>
     <span id="mobile-controls" style="display:none;">
-      Left thumb — Move &nbsp;|&nbsp; Right drag — Look<br>
-      JUMP button — Jump &nbsp;|&nbsp; SPRINT — toggle sprint<br>
-      PLACE / REMOVE buttons — build &amp; destroy<br>
-      Tap hotbar to change block type
+      Left thumb — Move &nbsp;|&nbsp; Right drag — Look &nbsp;|&nbsp; JUMP to jump<br>
+      Reach the <strong style="color:#FFD700;">GOLD</strong> platform to win!<br>
+      Touch <strong style="color:#FFD700;">YELLOW</strong> checkpoints to save &nbsp;|&nbsp; Avoid <strong style="color:#FF4400;">RED</strong> kill bricks
     </span>
   </div>
 </div>
@@ -267,7 +289,7 @@ body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Arial, sa
 <div id="stats">
   <div id="stat-pos">Pos: 0, 0, 0</div>
   <div id="stat-fps">FPS: --</div>
-  <div id="stat-blocks">Blocks placed: 0</div>
+  <div id="stat-blocks">Parts placed: 0</div>
 </div>
 
 <div id="health-container">
@@ -290,6 +312,16 @@ body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Arial, sa
 </div>
 
 <div id="chat"></div>
+
+<!-- Leaderboard (top-right, Roblox style) -->
+<div id="leaderboard">
+  <div id="lb-title">LEADERBOARD</div>
+  <div class="lb-row"><span class="lb-label">Stage</span><span id="lb-stage">0 / 3</span></div>
+  <div class="lb-row"><span class="lb-label">Deaths</span><span id="lb-deaths">0</span></div>
+</div>
+
+<!-- Death flash overlay -->
+<div id="death-flash"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script>
@@ -336,9 +368,18 @@ let selectedSlot = 0;
 let health = 100;
 let placedBlocks = new Map();       // "cx,cy,cz" -> { mesh }
 let blockMeshes = [];               // for raycasting
+let killMeshes  = [];               // kill brick meshes
+let checkpointMeshes = [];          // checkpoint meshes
 let ghostMesh, ghostMat;
 let walkTimer = 0;
 let userBlockCount = 0;
+
+// Obby / game state
+let currentStage = 0;
+let deaths = 0;
+let checkpointPos = new THREE.Vector3(0, 6, 0);
+let isRespawning = false;
+let killAnimTime = 0;               // for pulsing kill bricks
 
 // FPS tracking
 let fpsFrames = 0, fpsLast = 0, fpsVal = 0;
@@ -464,7 +505,7 @@ function initScene() {
   buildClouds();
   buildCharacter();
   buildGhostBlock();
-  buildStarterWorld();
+  buildObby();
 }
 
 // ============================================================
@@ -473,7 +514,7 @@ function initScene() {
 function buildBaseplate() {
   // Main green slab
   const geo = new THREE.BoxGeometry(512, 4, 512);
-  const mat = new THREE.MeshLambertMaterial({ color: 0x4DA44B });
+  const mat = new THREE.MeshPhongMaterial({ color: 0x4DA44B, shininess: 40, specular: 0x112211 });
   baseMesh = new THREE.Mesh(geo, mat);
   baseMesh.position.y = -2; // top surface at y=0
   baseMesh.receiveShadow = true;
@@ -520,7 +561,7 @@ function buildCharacter() {
   function part(w, h, d, color) {
     const m = new THREE.Mesh(
       new THREE.BoxGeometry(w, h, d),
-      new THREE.MeshLambertMaterial({ color })
+      new THREE.MeshPhongMaterial({ color, shininess: 80, specular: 0x222222 })
     );
     m.castShadow = true;
     return m;
@@ -619,12 +660,14 @@ function buildGhostBlock() {
 }
 
 // ============================================================
-// STARTER WORLD
+// WORLD / OBBY BUILDER
 // ============================================================
+
+// User-placed blocks (grid-snapped, BS×BS×BS)
 function placeBlock(cx, cy, cz, typeIdx) {
   const key = `${cx},${cy},${cz}`;
   if (placedBlocks.has(key)) return;
-  const mat = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[typeIdx].color });
+  const mat = new THREE.MeshPhongMaterial({ color: BLOCK_TYPES[typeIdx].color, shininess: 70, specular: 0x222222 });
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(BS, BS, BS), mat);
   mesh.position.set(cx, cy, cz);
   mesh.castShadow = true;
@@ -636,75 +679,152 @@ function placeBlock(cx, cy, cz, typeIdx) {
 }
 
 function blockCenter(ix, iy, iz) {
-  // World center from grid indices. Y: bottom of layer iy is at iy*BS, center is iy*BS + HS
   return { cx: ix * BS, cy: iy * BS + HS, cz: iz * BS };
 }
 
-function buildStarterWorld() {
-  // Spawn area: colorful checkerboard ring
-  const ringColors = [1, 4, 0, 2];
-  for (let ix = -6; ix <= 6; ix++) {
-    for (let iz = -6; iz <= 6; iz++) {
-      const d = Math.abs(ix) + Math.abs(iz);
-      if (d >= 5 && d <= 8) {
-        const { cx, cy, cz } = blockCenter(ix, 0, iz);
-        placeBlock(cx, cy, cz, ringColors[(ix + iz + 8) % 4]);
-      }
-    }
+// Generic part maker (arbitrary size, for the obby)
+// x,y,z = CENTER position; y is center of part
+function makePart(x, y, z, w, h, d, color, type = 'normal') {
+  let mat;
+  if (type === 'kill') {
+    mat = new THREE.MeshPhongMaterial({
+      color: 0xFF3300, shininess: 100, specular: 0x661100,
+      emissive: 0x330800,
+    });
+  } else if (type === 'checkpoint') {
+    mat = new THREE.MeshPhongMaterial({
+      color, shininess: 120, specular: 0x555500,
+      emissive: new THREE.Color(color).multiplyScalar(0.18),
+    });
+  } else if (type === 'finish') {
+    mat = new THREE.MeshPhongMaterial({
+      color, shininess: 150, specular: 0x888800,
+      emissive: new THREE.Color(color).multiplyScalar(0.25),
+    });
+  } else {
+    mat = new THREE.MeshPhongMaterial({ color, shininess: 75, specular: 0x222222 });
   }
 
-  // Staircase going north
-  for (let step = 0; step < 8; step++) {
-    for (let w = -2; w <= 2; w++) {
-      for (let h = 0; h <= step; h++) {
-        const { cx, cy, cz } = blockCenter(w, h, -(8 + step));
-        placeBlock(cx, cy, cz, 4); // stone
-      }
-    }
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  mesh.position.set(x, y, z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData.partType = type;
+
+  // AABB for collision (stored on mesh for easy lookup)
+  mesh.userData.aabb = {
+    minX: x - w/2, maxX: x + w/2,
+    minY: y - h/2, maxY: y + h/2,
+    minZ: z - d/2, maxZ: z + d/2,
+  };
+
+  scene.add(mesh);
+  blockMeshes.push(mesh); // included in raycast targets
+
+  if (type === 'kill') {
+    killMeshes.push(mesh);
+  } else if (type === 'checkpoint') {
+    checkpointMeshes.push(mesh);
   }
 
-  // Platform at top of stairs with a brick border
-  for (let ix = -4; ix <= 4; ix++) {
-    for (let iz = -18; iz >= -26; iz--) {
-      const onEdge = ix === -4 || ix === 4 || iz === -18 || iz === -26;
-      const { cx, cy, cz } = blockCenter(ix, 8, iz);
-      placeBlock(cx, cy, cz, onEdge ? 0 : 7); // brick border, sky-blue center
-    }
-  }
+  return mesh;
+}
 
-  // Pillars on the platform corners
-  [[- 4, -18], [4, -18], [-4, -26], [4, -26]].forEach(([ix, iz]) => {
-    for (let iy = 9; iy <= 13; iy++) {
-      const { cx, cy, cz } = blockCenter(ix, iy, iz);
-      placeBlock(cx, cy, cz, 0); // brick
-    }
+// Thin post (visual detail on checkpoints)
+function makePost(x, yBottom, z, height, color) {
+  const mat = new THREE.MeshPhongMaterial({ color, shininess: 60 });
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, height, 0.5), mat);
+  mesh.position.set(x, yBottom + height / 2, z);
+  mesh.castShadow = true;
+  scene.add(mesh);
+}
+
+function buildObby() {
+  // ── SPAWN PLATFORM ──────────────────────────────────────────
+  makePart(0, 1, 0, 18, 2, 18, 0x4DA44B, 'normal');       // green spawn
+  // Spawn pad ring (Roblox-style gray border)
+  makePart(0, 2.1, 0, 6, 0.15, 6, 0xAAAAAA, 'normal');    // gray square pad
+  // Spawn arrow — a simple yellow post in the center
+  makePost(0, 2.1, 0, 3, 0xFFDD00);
+
+  // ── SECTION 1: EASY JUMPS ───────────────────────────────────
+  makePart(0,   2,  -22, 8,  2, 8,  0xC4281C, 'normal'); // red
+  makePart(6,   4,  -34, 7,  2, 7,  0xE8D24D, 'normal'); // yellow
+  makePart(-4,  6,  -46, 7,  2, 7,  0x055E9A, 'normal'); // blue
+  makePart(4,   8,  -58, 6,  2, 6,  0x9B59B6, 'normal'); // purple
+  makePart(-2,  10, -70, 7,  2, 7,  0xFF6600, 'normal'); // orange
+
+  // ── CHECKPOINT 1 ────────────────────────────────────────────
+  const cp1 = makePart(0, 12, -82, 10, 2, 10, 0xFFDD00, 'checkpoint');
+  cp1.userData.stageNum = 1;
+  cp1.userData.spawnY   = 14;
+  makePost(-4, 13, -82, 5, 0xFFDD00);
+  makePost( 4, 13, -82, 5, 0xFFDD00);
+  // Checkpoint sign top bar
+  makePart(0, 18.5, -82, 9, 1, 0.4, 0xFFDD00, 'normal');
+
+  // ── SECTION 2: KILL BRICKS ──────────────────────────────────
+  // Safe then kill alternating
+  makePart( 0,  14, -96,  5, 2, 5,  0x8ABFDF, 'normal'); // safe
+  makePart( 7,  15, -108, 5, 2, 5,  0xFF3300, 'kill');    // KILL
+  makePart(-7,  16, -108, 5, 2, 5,  0x055E9A, 'normal'); // safe
+  makePart( 0,  17, -120, 5, 2, 5,  0xFF3300, 'kill');   // KILL
+  makePart( 6,  18, -130, 5, 2, 5,  0xC4281C, 'normal'); // safe
+  makePart(-6,  19, -130, 5, 2, 5,  0xFF3300, 'kill');   // KILL
+  makePart( 0,  20, -142, 6, 2, 6,  0xE8D24D, 'normal'); // safe
+
+  // ── CHECKPOINT 2 ────────────────────────────────────────────
+  const cp2 = makePart(0, 22, -155, 10, 2, 10, 0xFFDD00, 'checkpoint');
+  cp2.userData.stageNum = 2;
+  cp2.userData.spawnY   = 24;
+  makePost(-4, 23, -155, 5, 0xFFDD00);
+  makePost( 4, 23, -155, 5, 0xFFDD00);
+  makePart(0, 28.5, -155, 9, 1, 0.4, 0xFFDD00, 'normal');
+
+  // ── SECTION 3: NARROW ZIGZAG ────────────────────────────────
+  makePart(  0,  24, -170, 3.5, 2, 8,  0xFF44AA, 'normal'); // narrow pink
+  makePart(  8,  26, -180, 3.5, 2, 8,  0x4DA44B, 'normal'); // right
+  makePart( -8,  28, -190, 3.5, 2, 8,  0xE8D24D, 'normal'); // left
+  makePart(  6,  30, -200, 3.5, 2, 8,  0xFF3300, 'kill');    // KILL
+  makePart( -6,  30, -200, 3.5, 2, 8,  0xC4281C, 'normal'); // safe narrow
+  makePart(  0,  32, -212, 3.5, 2, 8,  0x9B59B6, 'normal'); // purple narrow
+
+  // ── CHECKPOINT 3 ────────────────────────────────────────────
+  const cp3 = makePart(0, 34, -225, 10, 2, 10, 0xFFDD00, 'checkpoint');
+  cp3.userData.stageNum = 3;
+  cp3.userData.spawnY   = 36;
+  makePost(-4, 35, -225, 5, 0xFFDD00);
+  makePost( 4, 35, -225, 5, 0xFFDD00);
+  makePart(0, 40.5, -225, 9, 1, 0.4, 0xFFDD00, 'normal');
+
+  // ── SECTION 4: HIGH ALTITUDE ─────────────────────────────────
+  makePart(  0,  36, -240, 4, 2, 4,  0x8ABFDF, 'normal');
+  makePart(  6,  39, -250, 4, 2, 4,  0xC4281C, 'normal');
+  makePart( -6,  42, -260, 4, 2, 4,  0xE8D24D, 'normal');
+  makePart(  0,  45, -270, 4, 2, 4,  0xFF44AA, 'normal');
+  makePart(  6,  48, -280, 4, 2, 4,  0xFF3300, 'kill');
+  makePart( -6,  48, -280, 4, 2, 4,  0x9B59B6, 'normal');
+  makePart(  0,  51, -292, 4, 2, 4,  0x055E9A, 'normal');
+
+  // ── FINISH PLATFORM ─────────────────────────────────────────
+  const finish = makePart(0, 54, -308, 20, 2, 20, 0xFFCC00, 'finish');
+  finish.userData.stageNum = 4;
+  // Trophy posts
+  makePost(-8, 55, -308, 8, 0xFF6600);
+  makePost( 8, 55, -308, 8, 0xFF6600);
+  makePart(0, 63.5, -308, 17, 1, 0.4, 0xFF6600, 'normal');
+  // Stars on top (simple cubes)
+  [[-8,0],[-4,0],[0,0],[4,0],[8,0]].forEach(([ox]) => {
+    const starMat = new THREE.MeshPhongMaterial({ color:0xFFCC00, emissive:0x554400, shininess:200 });
+    const star = new THREE.Mesh(new THREE.BoxGeometry(1.5,1.5,1.5), starMat);
+    star.position.set(ox, 65, -308);
+    star.rotation.y = Math.PI / 4;
+    scene.add(star);
   });
 
-  // Scattered terrain blocks
-  const rng = mulberry32(42);
-  const terrainColors = [1, 2, 3, 4, 6, 8];
-  for (let i = 0; i < 40; i++) {
-    const ix = Math.floor((rng() - 0.5) * 40);
-    const iz = Math.floor((rng() - 0.5) * 40);
-    if (Math.abs(ix) < 8 && Math.abs(iz) < 8) continue;
-    const h = 1 + Math.floor(rng() * 4);
-    const ci = terrainColors[Math.floor(rng() * terrainColors.length)];
-    for (let iy = 0; iy < h; iy++) {
-      const { cx, cy, cz } = blockCenter(ix, iy, iz);
-      placeBlock(cx, cy, cz, ci);
-    }
-  }
-
-  // Lava pool (cosmetic, no damage yet)
-  for (let ix = 12; ix <= 16; ix++) {
-    for (let iz = 12; iz <= 16; iz++) {
-      const { cx, cy, cz } = blockCenter(ix, 0, iz);
-      placeBlock(cx, cy, cz, 6);
-    }
-  }
-
-  chatMsg('Welcome to RobloxCopy!', '#FFD700');
-  setTimeout(() => chatMsg('Left click to place · Right click to remove · 1-9 select block', '#aaa'), 1200);
+  chatMsg('Welcome to RobloxCopy! Reach the GOLD platform to win!', '#FFD700');
+  setTimeout(() => chatMsg('Touch YELLOW checkpoints to save your progress', '#aaa'), 1800);
+  setTimeout(() => chatMsg('Avoid RED kill bricks — they respawn you!', '#ff6666'), 3200);
 }
 
 // Simple deterministic RNG (Mulberry32)
@@ -758,6 +878,25 @@ function overlaps(a, b) {
          a.minZ < b.maxZ && a.maxZ > b.minZ;
 }
 
+// Returns AABBs of all collidable surfaces near pos (grid blocks + obby parts)
+function allNearbyAABBs(pos) {
+  const result = [];
+  // Grid-snapped user blocks
+  for (const { cx, cy, cz } of nearbyBlocks(pos)) {
+    result.push({ minX:cx-HS, maxX:cx+HS, minY:cy-HS, maxY:cy+HS, minZ:cz-HS, maxZ:cz+HS });
+  }
+  // Obby parts (non-kill only — kills are handled separately)
+  for (const m of blockMeshes) {
+    if (!m.userData.aabb || m.userData.partType === 'kill') continue;
+    const a = m.userData.aabb;
+    // rough distance cull
+    if (Math.abs(a.minX + a.maxX)/2 - pos.x > 30) continue;
+    if (Math.abs(a.minZ + a.maxZ)/2 - pos.z > 30) continue;
+    result.push(a);
+  }
+  return result;
+}
+
 // Get block centers near player position
 function nearbyBlocks(pos) {
   const result = [];
@@ -778,6 +917,41 @@ function nearbyBlocks(pos) {
     }
   }
   return result;
+}
+
+// ============================================================
+// KILL / CHECKPOINT
+// ============================================================
+function killPlayer() {
+  if (isRespawning) return;
+  isRespawning = true;
+  deaths++;
+  updateLeaderboard();
+  // Flash red
+  const flash = document.getElementById('death-flash');
+  if (flash) { flash.style.opacity = '0.7'; setTimeout(() => { flash.style.opacity = '0'; }, 400); }
+  setTimeout(() => {
+    player.position.copy(checkpointPos);
+    vel.set(0, 0, 0);
+    updateHealth(100);
+    isRespawning = false;
+  }, 450);
+}
+
+function saveCheckpoint(stageNum, spawnY) {
+  if (stageNum <= currentStage) return;
+  currentStage = stageNum;
+  checkpointPos.set(player.position.x, spawnY, player.position.z);
+  updateLeaderboard();
+  chatMsg(`✓ Checkpoint! Stage ${stageNum} reached`, '#FFD700');
+}
+
+function updateLeaderboard() {
+  const stageEl = document.getElementById('lb-stage');
+  const deathEl = document.getElementById('lb-deaths');
+  if (stageEl) stageEl.textContent = currentStage === 4 ? '🏆 COMPLETE' : `${currentStage} / 3`;
+  if (deathEl) deathEl.textContent = deaths;
+  document.getElementById('stat-blocks').textContent = `Parts placed: ${userBlockCount}`;
 }
 
 // ============================================================
@@ -833,21 +1007,17 @@ function updatePlayer(dt) {
     if (vel.y < 0) { vel.y = 0; isOnGround = true; }
   }
 
-  // Block collision Y
-  const near = nearbyBlocks(pos);
-  for (const b of near) {
+  // Block/part collision Y
+  for (const ba of allNearbyAABBs(pos)) {
     const pa = playerAABB(pos);
-    const ba = blockAABB(b.cx, b.cy, b.cz);
     if (!overlaps(pa, ba)) continue;
     if (vel.y <= 0) {
-      // falling: land on top
       if (pa.minY < ba.maxY && pa.maxY > ba.maxY) {
         pos.y = ba.maxY;
         vel.y = 0;
         isOnGround = true;
       }
     } else {
-      // rising: hit bottom
       if (pa.maxY > ba.minY && pa.minY < ba.minY) {
         pos.y = ba.minY - PH;
         vel.y = 0;
@@ -855,11 +1025,38 @@ function updatePlayer(dt) {
     }
   }
 
+  // ---- Check kill bricks (any overlap = die) ----
+  if (!isRespawning) {
+    const pa0 = playerAABB(pos);
+    for (const km of killMeshes) {
+      const a = km.userData.aabb;
+      if (pa0.minX < a.maxX && pa0.maxX > a.minX &&
+          pa0.minY < a.maxY && pa0.maxY > a.minY &&
+          pa0.minZ < a.maxZ && pa0.maxZ > a.minZ) {
+        killPlayer(); break;
+      }
+    }
+    // ---- Check checkpoints / finish ----
+    for (const cm of checkpointMeshes) {
+      const a = cm.userData.aabb;
+      if (pa0.minX < a.maxX && pa0.maxX > a.minX &&
+          pa0.minY < a.maxY && pa0.maxY > a.minY &&
+          pa0.minZ < a.maxZ && pa0.maxZ > a.minZ) {
+        const sn = cm.userData.stageNum;
+        const sy = cm.userData.spawnY || (a.maxY + 2);
+        saveCheckpoint(sn, sy);
+        if (sn === 4) {
+          chatMsg('🏆 YOU WIN! You completed the obby!', '#FFD700');
+          setTimeout(() => chatMsg('Feel free to build your own parts — 1-9 to select', '#aaa'), 1500);
+        }
+      }
+    }
+  }
+
   // ---- Move X ----
   pos.x += vel.x * dt;
-  for (const b of nearbyBlocks(pos)) {
+  for (const ba of allNearbyAABBs(pos)) {
     const pa = playerAABB(pos);
-    const ba = blockAABB(b.cx, b.cy, b.cz);
     if (!overlaps(pa, ba)) continue;
     if (vel.x > 0) { pos.x = ba.minX - PW / 2; vel.x = 0; }
     else            { pos.x = ba.maxX + PW / 2; vel.x = 0; }
@@ -867,20 +1064,16 @@ function updatePlayer(dt) {
 
   // ---- Move Z ----
   pos.z += vel.z * dt;
-  for (const b of nearbyBlocks(pos)) {
+  for (const ba of allNearbyAABBs(pos)) {
     const pa = playerAABB(pos);
-    const ba = blockAABB(b.cx, b.cy, b.cz);
     if (!overlaps(pa, ba)) continue;
     if (vel.z > 0) { pos.z = ba.minZ - PW / 2; vel.z = 0; }
     else            { pos.z = ba.maxZ + PW / 2; vel.z = 0; }
   }
 
-  // Fall off world
-  if (pos.y < -60) {
-    pos.set(0, 8, 0);
-    vel.set(0, 0, 0);
-    updateHealth(health - 20);
-    chatMsg('You fell off the world!', '#ff4d4d');
+  // Fall off world → respawn at checkpoint
+  if (pos.y < -20) {
+    killPlayer();
   }
 
   // Rotate player body to face movement direction
@@ -1151,6 +1344,13 @@ function gameLoop(timestamp) {
     updatePlayer(dt);
     updateCamera();
     updateGhostBlock();
+
+    // Pulse kill bricks
+    killAnimTime += dt * 2.5;
+    const pulse = 0.06 + Math.abs(Math.sin(killAnimTime)) * 0.09;
+    for (const km of killMeshes) {
+      km.material.emissive.setRGB(pulse, 0, 0);
+    }
   }
 
   renderer.render(scene, camera);
