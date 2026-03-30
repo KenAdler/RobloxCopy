@@ -372,10 +372,12 @@ let player;                         // THREE.Group
 let charParts = {};                 // named limb groups
 let vel = new THREE.Vector3();      // player velocity
 let isOnGround = false;
-let yaw = 0, pitch = 0;
+let yaw = Math.PI, pitch = 0;
 let keys = {};
 let isLocked = false;
 let selectedSlot = 0;
+// Start camera BEHIND player facing the obby path (-Z direction)
+
 let health = 100;
 let placedBlocks = new Map();       // "cx,cy,cz" -> { mesh }
 let blockMeshes = [];               // ALL meshes for raycasting (obby + user)
@@ -666,6 +668,7 @@ function buildCharacter() {
   charParts.legR = legR;
 
   player.position.set(0, 6, 0);
+  player.rotation.y = Math.PI; // face toward obby path (-Z)
   scene.add(player);
 }
 
@@ -993,7 +996,7 @@ function updatePlayer(dt) {
   const speed = isSprinting ? SPRINT : WALK;
 
   // Movement direction relative to camera yaw
-  const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+  const fwd = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
   const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
   const dir = new THREE.Vector3();
   // Keyboard
