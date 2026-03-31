@@ -953,7 +953,7 @@ function aeDrop(e,slotType){
 }
 
 // ─── 2D AVATAR PREVIEW ───────────────────────────────────────
-function rRect(ctx,cx,y,w,h,r,fill){ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(cx-w/2,y,w,h,r);ctx.fill();}
+function rRect(ctx,cx,y,w,h,r,fill){ctx.fillStyle=fill;ctx.fillRect(cx-w/2,y,w,h);}
 function shadeHex(hex,delta){const n=parseInt(hex.replace('#',''),16);const r=Math.max(0,Math.min(255,(n>>16&255)+delta)),g=Math.max(0,Math.min(255,(n>>8&255)+delta)),b=Math.max(0,Math.min(255,(n&255)+delta));return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');}
 
 function drawAvatarPreview(){
@@ -972,7 +972,7 @@ function drawAvatarOnCanvas(canvas,mini){
   const ctx=canvas.getContext('2d');
   const W=canvas.width,H=canvas.height;
   ctx.clearRect(0,0,W,H);
-  if(!mini){ctx.fillStyle='rgba(255,255,255,0.03)';ctx.beginPath();ctx.roundRect(0,0,W,H,10);ctx.fill();}
+  if(!mini){ctx.fillStyle='rgba(255,255,255,0.03)';ctx.fillRect(0,0,W,H);}
 
   const scale=mini?0.18:1;
   const cx=W/2,baseY=mini?H*0.15:52;
@@ -1020,16 +1020,10 @@ function drawAvatarOnCanvas(canvas,mini){
   // Hat
   drawHat2D(ctx,cx,baseY,hw,mini);
 
-  // Gear badges (small icons bottom-right, full canvas only)
+  // Gear badge count
   if(!mini){
-    const activeGear=CATALOG.filter(i=>i.type==='gear'&&charStyle[i.key]);
-    ctx.font='14px serif';
-    activeGear.forEach((item,i)=>{
-      const parser=new DOMParser();
-      const doc=parser.parseFromString(`<span>${item.icon}</span>`,'text/html');
-      const text=doc.body.textContent||'';
-      ctx.fillText(text,W-20,H-14-i*18);
-    });
+    const n=CATALOG.filter(i=>i.type==='gear'&&charStyle[i.key]).length;
+    if(n>0){ctx.fillStyle='rgba(0,166,80,0.85)';ctx.fillRect(W-22,H-20,20,14);ctx.fillStyle='white';ctx.font='bold 10px sans-serif';ctx.fillText(n+' gear',W-21,H-9);}
   }
 }
 
